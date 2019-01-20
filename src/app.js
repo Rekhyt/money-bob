@@ -23,9 +23,10 @@ app.post('/command', async (req, res) => {
   try {
     await commandDispatcher.dispatch(req.body)
 
-    res.json({ message: 'Account created!' })
+    res.status(202).end()
   } catch (err) {
     logger.error(err)
+    res.status(400)
     res.json({ message: err.message })
   }
 })
