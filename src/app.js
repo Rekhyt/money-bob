@@ -1,7 +1,37 @@
-const io = require('socket.io')
+const express = require('express')
+const bodyParser = require('body-parser')
 
-io.on('connection', socket => {
-  socket.on('disconnect', () => {
-    console.log('kthxbai')
-  })
+const { CommandDispatcherLocal, EventDispatcherLocal } = require('ddd-js')
+
+const logger = require('./util/getBunyanLogger')('money-bob')
+const EntityFactory = require('./Aggregates/EntityFactory')
+const ReadModelFactory = require('./ReadModelFactory')
+
+const eventDispatcher = new EventDispatcherLocal(logger)
+const commandDispatcher = new CommandDispatcherLocal(eventDispatcher, logger)
+
+const entityFactory = new EntityFactory(logger, commandDispatcher)
+const readModelFactory = new ReadModelFactory(logger, eventDispatcher)
+
+const account = entityFactory.createAccount()
+const accountsReadModel = readModelFactory.createAccounts()
+
+const app = express()
+app.use(bodyParser.json('application/json'))
+
+app.post('/command', async (req, res) => {
+  try {
+    await commandDispatcher.dispatch(req.body)
+
+    res.json({ message: 'Account created!' })
+  } catch (err) {
+    logger.error(err)
+    res.json({ message: err.message })
+  }
 })
+
+app.get('/accounts', (req, res) => {
+  res.json(accountsReadModel.accounts)
+})
+
+app.listen(8000)

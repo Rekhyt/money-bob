@@ -4,7 +4,8 @@
   "description": "Where's the money, Bob?",
   "main": "src/app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "nodemon src/app.js",
+    "test": "mocha test/unit --recursive"
   },
   "repository": {
     "type": "git",
@@ -17,15 +18,25 @@
   },
   "homepage": "https://github.com/Rekhyt/money-bob#readme",
   "devDependencies": {
-    "eslint": "^5.9.0",
+    "@types/socket.io": "^2.1.2",
+    "eslint": "^5.12.1",
     "eslint-config-standard": "^12.0.0",
     "eslint-plugin-import": "^2.14.0",
-    "eslint-plugin-node": "^8.0.0",
+    "eslint-plugin-node": "^8.0.1",
     "eslint-plugin-promise": "^4.0.1",
     "eslint-plugin-standard": "^4.0.0",
-    "eslint-standard": "^1.0.2"
+    "eslint-standard": "^1.0.2",
+    "mocha": "^5.2.0",
+    "nodemon": "^1.18.9"
   },
   "dependencies": {
-    "socket.io": "^2.1.1"
+    "body-parser": "^1.18.3",
+    "bunyan": "^1.8.12",
+    "card-validator": "^6.1.0",
+    "ddd-js": "^1.0.0-alpha.18",
+    "express": "^4.16.4",
+    "ibantools": "^2.0.0",
+    "socket.io": "^2.2.0",
+    "uuid": "^3.3.2"
   }
 }
