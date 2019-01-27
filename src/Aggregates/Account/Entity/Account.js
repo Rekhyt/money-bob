@@ -16,10 +16,11 @@ class Account extends Entity {
   /**
    * @param {Logger} logger
    * @param {CommandDispatcher} commandDispatcher
+   * @param {EventDispatcher} eventDispatcher
    * @param {Object[]} accounts
    */
-  constructor (logger, commandDispatcher, accounts = []) {
-    super(logger, commandDispatcher)
+  constructor (logger, commandDispatcher, eventDispatcher, accounts = []) {
+    super(logger, commandDispatcher, eventDispatcher)
 
     this._accounts = accounts
 

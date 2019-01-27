@@ -4,10 +4,12 @@ class EntityFactory {
   /**
    * @param {Logger} logger
    * @param {CommandDispatcher} commandDispatcher
+   * @param {EventDispatcher} eventDispatcher
    */
-  constructor (logger, commandDispatcher) {
+  constructor (logger, commandDispatcher, eventDispatcher) {
     this._logger = logger
     this._commandDispatcher = commandDispatcher
+    this._eventDispatcher = eventDispatcher
   }
 
   /**
@@ -25,7 +27,7 @@ class EntityFactory {
    * @private
    */
   _createEntity (constructor, ...args) {
-    return new constructor(...[this._logger, this._commandDispatcher, ...args])
+    return new constructor(...[this._logger, this._commandDispatcher, this._eventDispatcher, ...args])
   }
 }
 
