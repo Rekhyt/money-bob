@@ -29,7 +29,6 @@ class Accounts extends ReadModel {
    * @private
    */
   async _accountCreated (event) {
-    console.log(event)
     this._accounts.push(event.payload)
 
     return []
