@@ -24,7 +24,17 @@ class Account extends Entity {
 
     this._accounts = accounts
 
+    this._metadataRequiredFieldsByType = {
+      bankaccount: ['institute', 'iban', 'bic'],
+      creditcart: ['institute', 'type', 'holder', 'number'],
+      paypal: ['emailAddress'],
+      debit: ['debitorName'],
+      liability: ['debitorName']
+    }
+
     this.registerCommand('Account.createAccount', command => this._createAccount(command))
+
+    this.registerEvent('Account.accountCreated', event => this._accountCreated(event))
   }
 
   /**
@@ -36,8 +46,7 @@ class Account extends Entity {
    * @private
    */
   _createAccount (command) {
-    const name = new AccountName(command.payload.name)
-    const type = new AccountType(command.payload.type)
+    const { name, type } = this._payloadToValueObjects(command.payload)
 
     if (this._accounts.find(account => account.name.equals(name))) {
       throw new Error(`Account with name "${name}" already exists.`)
@@ -47,11 +56,36 @@ class Account extends Entity {
       throw new Error(`No metadata provided for account type "${type}".`)
     }
 
-    const metadata = this._extractMetadata(type, command.payload.metadata)
+    return [this.createEvent('Account.accountCreated', command.payload)]
+  }
+
+  /**
+   * @param {string} event.name
+   * @param {string} event.time
+   * @param {string} event.payload.name
+   * @param {string} event.payload.type
+   * @param {AccountMetadata} event.payload.metadata
+   * @private
+   */
+  _accountCreated (event) {
+    const { name, type, metadata } = this._payloadToValueObjects(event.payload)
 
     this._accounts.push({ name, type, metadata })
+  }
 
-    return [this.createEvent('Account.accountCreated', command.payload)]
+  /**
+   * @param {string} payload.name
+   * @param {string} payload.type
+   * @param {AccountMetadata} payload.metadata
+   * @returns {{name: AccountName, type: AccountType, metadata: *}}
+   * @private
+   */
+  _payloadToValueObjects (payload) {
+    const name = new AccountName(payload.name)
+    const type = new AccountType(payload.type)
+    const metadata = this._extractMetadata(type, payload.metadata)
+
+    return { name, type, metadata }
   }
 
   /**
@@ -61,6 +95,15 @@ class Account extends Entity {
    * @private
    */
   _extractMetadata (type, metadata) {
+    if (!metadata[type] || typeof metadata[type] !== 'object') {
+      throw new Error(`No metadata for account type ${type} or metadata not an object.`)
+    }
+
+    const missingFields = this._validateMetadataFieldsExisting(type, metadata[type])
+    if (missingFields.length > 0) {
+      throw new Error(`Missing required field(s) in metadata: ${missingFields.join(', ')}`)
+    }
+
     switch (type.getValue()) {
       case 'bankaccount':
         return new MetadataBankAccount(
@@ -85,6 +128,10 @@ class Account extends Entity {
       case 'liability':
         return new MetadataLiability(new StringValue(metadata[type].debitorName))
     }
+  }
+
+  _validateMetadataFieldsExisting (type, metadata) {
+    return this._metadataRequiredFieldsByType[type].filter(key => !metadata.hasOwnProperty(key))
   }
 }
 
