@@ -4,7 +4,7 @@
   "description": "Where's the money, Bob?",
   "main": "src/app.js",
   "scripts": {
-    "start": "nodemon src/app.js",
+    "start": "nodemon src/app.js | ./node_modules/.bin/bunyan",
     "test": "mocha test/unit --recursive"
   },
   "repository": {
