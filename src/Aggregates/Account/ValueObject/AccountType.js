@@ -6,8 +6,7 @@ class AccountType extends Enum {
       'bankaccount',
       'creditcard',
       'paypal',
-      'bonuspoints',
-      'debug',
+      'debit',
       'liability'
     ]
   }
