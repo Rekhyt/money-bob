@@ -62,3 +62,9 @@ typings/
 
 # intelliJ
 .idea/
+
+# project
+datasources/*
+
+# keep directories that contain a .gitkeep file
+!*/.gitkeep
