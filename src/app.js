@@ -2,7 +2,14 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const path = require('path')
 
-const { CommandDispatcherLocal, EventDispatcherLocal, EventDispatcherEventEmitter, EventRepositoryJsonFile } = require('ddd-js')
+const {
+  CommandDispatcherLocal,
+  EventDispatcherLocal,
+  EventDispatcherEventEmitter,
+  EventRepositoryJsonFile,
+  InvalidArgumentError,
+  InvalidTypeError
+} = require('ddd-js')
 
 const logger = require('./util/getBunyanLogger')('money-bob')
 const EntityFactory = require('./Aggregates/EntityFactory')
@@ -16,7 +23,7 @@ const commandDispatcher = new CommandDispatcherLocal(eventDispatcher, logger)
 const entityFactory = new EntityFactory(logger, commandDispatcher, eventDispatcher)
 const readModelFactory = new ReadModelFactory(logger, eventDispatcher)
 
-const account = entityFactory.createAccount()
+const accountList = entityFactory.createAccountList()
 const accountsReadModel = readModelFactory.createAccounts()
 
 const app = express()
@@ -29,8 +36,17 @@ eventDispatcher.replayAll().then(() => {
 
       res.status(202).end()
     } catch (err) {
-      logger.error(err)
-      res.status(400)
+      let logSubject = err
+      let status = 500
+
+      if (err instanceof InvalidArgumentError || err instanceof InvalidTypeError) {
+        logSubject = err.message
+        status = 400
+      }
+
+      logger.error(logSubject)
+      res.status(status)
+
       res.json({ message: err.message })
     }
   })

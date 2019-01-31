@@ -1,9 +1,9 @@
 declare class AccountMetadata {
-    bankaccount: AccountMetadataBankAccount
-    creditcard: AccountMetadataCreditCard
-    paypal: AccountMetadataPaypal
-    debit: AccountMetadataDebit
-    liability: AccountMetadataLiability
+    BankAccount: AccountMetadataBankAccount
+    CreditCard: AccountMetadataCreditCard
+    Paypal: AccountMetadataPaypal
+    Debit: AccountMetadataDebit
+    Liability: AccountMetadataLiability
 }
 
 declare class AccountMetadataBankAccount {

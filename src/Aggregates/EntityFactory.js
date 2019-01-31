@@ -1,4 +1,4 @@
-const Account = require('./Account/Entity/Account')
+const AccountList = require('./Account/Entity/AccountList')
 
 class EntityFactory {
   /**
@@ -13,11 +13,11 @@ class EntityFactory {
   }
 
   /**
-   * @param {{name: AccountName}[]} accounts
-   * @return {Account}
+   * @param {Account[]} accounts
+   * @return {AccountList}
    */
-  createAccount (accounts = []) {
-    return this._createEntity(Account, accounts)
+  createAccountList (accounts = []) {
+    return this._createEntity(AccountList, accounts)
   }
 
   /**
