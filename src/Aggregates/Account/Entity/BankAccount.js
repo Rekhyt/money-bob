@@ -1,10 +1,15 @@
-const { StringValue } = require('ddd-js')
-
 const Account = require('./Account')
-const Iban = require('../ValueObject/Iban')
 const Bic = require('../ValueObject/Bic')
+const Iban = require('../ValueObject/Iban')
+const Institute = require('../ValueObject/Metadata/Institute')
 
 class BankAccount extends Account {
+  /**
+   * @param {AccountName} name
+   * @param {Institute} institute
+   * @param {Iban} iban
+   * @param {Bic} bic
+   */
   constructor (name, institute, iban, bic) {
     super(name)
 
@@ -13,6 +18,11 @@ class BankAccount extends Account {
     this.bic = bic
   }
 
+  /**
+   * @param {AccountName} name
+   * @param {AccountMetadataBankAccount} rawTypeMetadata
+   * @returns {BankAccount}
+   */
   static tryCreate (name, rawTypeMetadata) {
     const missingFields = super.validateMetadataFieldsExisting(['institute', 'number', 'bic'], rawTypeMetadata)
     if (missingFields.length > 0) {
@@ -21,7 +31,7 @@ class BankAccount extends Account {
 
     return new BankAccount(
       name,
-      new StringValue(rawTypeMetadata.institute),
+      new Institute(rawTypeMetadata.institute),
       new Iban(rawTypeMetadata.number),
       new Bic(rawTypeMetadata.bic)
     )

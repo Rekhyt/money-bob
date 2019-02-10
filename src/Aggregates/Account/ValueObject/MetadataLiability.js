@@ -1,13 +1,13 @@
 class MetadataLiability {
   /**
-   * @param {StringValue} debitorName
+   * @param {DebitorName} debitorName
    */
   constructor (debitorName) {
     this._debitorName = debitorName
   }
 
   /**
-   * @returns {StringValue}
+   * @returns {DebitorName}
    */
   get debitorName () {
     return this._debitorName

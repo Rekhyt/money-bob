@@ -1,6 +1,6 @@
 class MetadataBankAccount {
   /**
-   * @param {StringValue} institute
+   * @param {Institute} institute
    * @param {Iban} iban
    * @param {Bic} bic
    */
@@ -11,7 +11,7 @@ class MetadataBankAccount {
   }
 
   /**
-   * @returns {StringValue}
+   * @returns {Institute}
    */
   get institute () {
     return this._institute

@@ -1,8 +1,8 @@
 class MetadataCreditCard {
   /**
-   * @param {StringValue} institute
+   * @param {Institute} institute
    * @param {CreditCardType} type
-   * @param {StringValue} holder
+   * @param {Holder} holder
    * @param {CreditCardNumber} number
    */
   constructor (institute, type, holder, number) {
@@ -13,7 +13,7 @@ class MetadataCreditCard {
   }
 
   /**
-   * @returns {StringValue}
+   * @returns {Institute}
    */
   get institute () {
     return this._institute
@@ -27,7 +27,7 @@ class MetadataCreditCard {
   }
 
   /**
-   * @returns {StringValue}
+   * @returns {Holder}
    */
   get holder () {
     return this._holder
@@ -58,3 +58,5 @@ class MetadataCreditCard {
     return `Institue: ${this._institute} / Type: ${this._type} / Holder: ${this._holder} / No.: ${this._number}`
   }
 }
+
+module.exports = MetadataCreditCard
