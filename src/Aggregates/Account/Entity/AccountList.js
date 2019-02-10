@@ -6,6 +6,7 @@ const CreditCard = require('./CreditCard')
 const Paypal = require('./Paypal')
 const Debit = require('./Debit')
 const Liability = require('./Liability')
+const Tag = require('../ValueObject/Tag')
 
 // value objects
 const AccountName = require('../ValueObject/AccountName')
@@ -34,6 +35,7 @@ class AccountList extends RootEntity {
 
     this.registerCommand('Account.createAccount', command => this.createAccount(command.payload.name, command.payload.type, command.payload.metadata))
     this.registerCommand('Account.linkAccounts', command => this.linkAccounts(command.payload.subAccountName, command.payload.parentAccountName))
+    this.registerCommand('Account.addTags', command => this.addTags(command.payload.name, command.payload.tags))
 
     this.registerEvent('Account.accountCreated', event => this.accountCreated(event.payload.name, event.payload.type, event.payload.metadata))
     this.registerEvent('Account.accountsLinked', event => this.accountsLinked(event.payload.subAccountName, event.payload.parentAccountName))
@@ -174,6 +176,41 @@ class AccountList extends RootEntity {
    */
   async accountsLinked (rawSubAccountName, rawParentAccountName) {
     this._accounts.find(account => account.name.getValue() === rawSubAccountName).parent = new AccountName(rawParentAccountName)
+  }
+
+  /**
+   * @param {string} rawName
+   * @param {string[]} rawTags
+   */
+  addTags (rawName, rawTags) {
+    const validationError = new ValidationError()
+    let name
+    try {
+      name = new AccountName(rawName)
+    } catch (err) {
+      validationError.addInvalidField('name', err.message)
+    }
+
+    let account
+    if (name) {
+      account = this._accounts.find(account => account.name.equals(name))
+    }
+
+    if (!account) {
+      validationError.addInvalidField('name', `Account with name "${name}" not found.`)
+    }
+
+    const tags = rawTags.map(tag => {
+      try {
+        return new Tag(tag)
+      } catch (err) {
+        validationError.addInvalidField('tags', err.message)
+      }
+    }).filter(tag => !!tag)
+
+    if (validationError.hasErrors()) throw validationError
+
+    return [this.createEvent('Account.tagsAdded', { name: name.getValue(), tags: tags.map(tag => tag.getValue()) })]
   }
 
   /**
