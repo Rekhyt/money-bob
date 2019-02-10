@@ -5,7 +5,9 @@
   "main": "src/app.js",
   "scripts": {
     "start": "nodemon src/app.js | ./node_modules/.bin/bunyan",
-    "test": "mocha test/unit --recursive"
+    "test": "mocha test/unit --recursive",
+    "cover": "nyc npm test",
+    "coveralls": "nyc npm test && nyc report --reporter=text-lcov | coveralls"
   },
   "repository": {
     "type": "git",
@@ -20,6 +22,7 @@
   "devDependencies": {
     "@types/socket.io": "^2.1.2",
     "chai": "^4.2.0",
+    "coveralls": "^3.0.2",
     "eslint": "^5.12.1",
     "eslint-config-standard": "^12.0.0",
     "eslint-plugin-import": "^2.14.0",
@@ -28,7 +31,8 @@
     "eslint-plugin-standard": "^4.0.0",
     "eslint-standard": "^1.0.2",
     "mocha": "^5.2.0",
-    "nodemon": "^1.18.9"
+    "nodemon": "^1.18.9",
+    "nyc": "^13.2.0"
   },
   "dependencies": {
     "body-parser": "^1.18.3",
@@ -44,5 +48,18 @@
     "ignore": [
       "datasources/*"
     ]
+  },
+  "nyc": {
+    "include": [
+      "src/**/*.js"
+    ],
+    "exclude": [
+      "src/app.js"
+    ],
+    "reporter": [
+      "text",
+      "html"
+    ],
+    "all": true
   }
 }
