@@ -1,4 +1,5 @@
-const Accounts = require('./ReadModel/Accounts')
+const AccountList = require('./ReadModel/AccountList')
+const AccountTree = require('./ReadModel/AccountTree')
 
 class ReadModelFactory {
   /**
@@ -12,10 +13,14 @@ class ReadModelFactory {
 
   /**
    * @param {Object[]} accounts
-   * @returns {Accounts}
+   * @returns {AccountList}
    */
-  createAccounts (accounts = []) {
-    return this._createReadModel(Accounts, accounts)
+  createAccountList (accounts = []) {
+    return this._createReadModel(AccountList, accounts)
+  }
+
+  createAccountTree (accounts = []) {
+    return this._createReadModel(AccountTree, accounts)
   }
 
   /**

@@ -4,12 +4,20 @@
 class Account {
   /**
    * @param {AccountName} name
+   * @param {Account?} parent
    */
-  constructor (name) {
+  constructor (name, parent = null) {
     this.name = name
-    this.parent = null
+    this.parent = parent
   }
 
+  /**
+   * @param {Account} account
+   * @returns {boolean}
+   */
+  equals (account) {
+    return account.constructor.name === this.constructor.name && account.name.equals(this.name)
+  }
   /**
    * @param {string[]} requiredFields
    * @param {*} metadata

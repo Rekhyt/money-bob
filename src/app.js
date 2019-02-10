@@ -8,7 +8,8 @@ const {
   EventDispatcherEventEmitter,
   EventRepositoryJsonFile,
   InvalidArgumentError,
-  InvalidTypeError
+  InvalidTypeError,
+  ValidationError
 } = require('ddd-js')
 
 const logger = require('./util/getBunyanLogger')('money-bob')
@@ -24,7 +25,8 @@ const entityFactory = new EntityFactory(logger, commandDispatcher, eventDispatch
 const readModelFactory = new ReadModelFactory(logger, eventDispatcher)
 
 const accountList = entityFactory.createAccountList()
-const accountsReadModel = readModelFactory.createAccounts()
+const accountListReadModel = readModelFactory.createAccountList()
+const accountTreeReadModel = readModelFactory.createAccountTree()
 
 const app = express()
 app.use(bodyParser.json('application/json'))
@@ -38,21 +40,30 @@ eventDispatcher.replayAll().then(() => {
     } catch (err) {
       let logSubject = err
       let status = 500
+      let errorResponse = { message: err.message }
 
       if (err instanceof InvalidArgumentError || err instanceof InvalidTypeError) {
         logSubject = err.message
         status = 400
       }
 
+      if (err instanceof ValidationError) {
+        logSubject = { message: err.message, invalidFields: err.invalidFields }
+        errorResponse.invalidFields = err.invalidFields
+      }
+
       logger.error(logSubject)
       res.status(status)
-
-      res.json({ message: err.message })
+      res.json(errorResponse)
     }
   })
 
   app.get('/accounts', (req, res) => {
-    res.json(accountsReadModel.accounts)
+    res.json(accountListReadModel.accounts)
+  })
+
+  app.get('/accountTree', (req, res) => {
+    res.json(accountTreeReadModel.accounts)
   })
 
   app.listen(8000)

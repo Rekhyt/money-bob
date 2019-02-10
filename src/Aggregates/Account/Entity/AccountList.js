@@ -1,4 +1,4 @@
-const { Entity } = require('ddd-js')
+const { RootEntity, ValidationError } = require('ddd-js')
 
 // entities
 const BankAccount = require('./BankAccount')
@@ -11,7 +11,7 @@ const Liability = require('./Liability')
 const AccountName = require('../ValueObject/AccountName')
 const AccountType = require('../ValueObject/AccountType')
 
-class AccountList extends Entity {
+class AccountList extends RootEntity {
   /**
    * @param {Logger} logger
    * @param {CommandDispatcher} commandDispatcher
@@ -22,7 +22,7 @@ class AccountList extends Entity {
     super(logger, commandDispatcher, eventDispatcher)
 
     /** @type Account[] */
-    this._accounts = accounts
+    this._accounts = [...accounts]
 
     this._accountClasses = {
       bankaccount: BankAccount,
@@ -32,11 +32,11 @@ class AccountList extends Entity {
       liability: Liability
     }
 
-    this.registerCommand('Account.createAccount', command => this._createAccount(command.payload.name, command.payload.type, command.payload.metadata))
-    this.registerCommand('Account.linkAccounts', command => this._linkAccounts(command))
+    this.registerCommand('Account.createAccount', command => this.createAccount(command.payload.name, command.payload.type, command.payload.metadata))
+    this.registerCommand('Account.linkAccounts', command => this.linkAccounts(command.payload.subAccountName, command.payload.parentAccountName))
 
-    this.registerEvent('Account.accountCreated', event => this._accountCreated(event.payload.name, event.payload.type, event.payload.metadata))
-    this.registerEvent('Account.accountLinked', event => this._accountsLinked(event))
+    this.registerEvent('Account.accountCreated', event => this.accountCreated(event.payload.name, event.payload.type, event.payload.metadata))
+    this.registerEvent('Account.accountsLinked', event => this.accountsLinked(event.payload.subAccountName, event.payload.parentAccountName))
   }
 
   /**
@@ -44,25 +44,44 @@ class AccountList extends Entity {
    * @param {string} rawType
    * @param {AccountMetadata} rawMetadata
    * @returns {Event[]}
-   * @private
    */
-  _createAccount (rawName, rawType, rawMetadata) {
-    const name = new AccountName(rawName)
-    const type = new AccountType(rawType)
+  createAccount (rawName, rawType, rawMetadata) {
+    let name, type
+    const validationError = new ValidationError()
 
-    if (this._accounts.find(account => account.name.equals(name))) {
-      throw new Error(`Account with name "${name}" already exists.`)
+    try {
+      name = new AccountName(rawName)
+    } catch (err) {
+      validationError.addInvalidField('name', err.message)
     }
 
-    if (!rawMetadata[type]) {
-      throw new Error(`No metadata provided for account type "${type}".`)
+    try {
+      type = new AccountType(rawType)
+    } catch (err) {
+      validationError.addInvalidField('type', err.message)
     }
 
-    if (typeof rawMetadata[type] !== 'object') {
-      throw new Error(`Expected metadata to be an object.`)
+    if (name && this._accounts.find(account => account.name.equals(name))) {
+      validationError.addInvalidField('name', `Account with name "${name}" already exists.`)
     }
 
-    this._accountClasses[type].tryCreate(name, rawMetadata[type])
+    if (type && !rawMetadata[type]) {
+      validationError.addInvalidField('metadata', `No metadata provided for account type "${type}".`)
+    }
+
+    if (type && rawMetadata[type] && typeof rawMetadata[type] !== 'object') {
+      validationError.addInvalidField('metadata', `Expected metadata to be an object.`)
+    }
+
+    if (type && rawMetadata[type] && typeof rawMetadata[type] === 'object') {
+      try {
+        this._accountClasses[type].tryCreate(name, rawMetadata[type])
+      } catch (err) {
+        validationError.addInvalidField('metadata', err.message)
+      }
+    }
+
+    if (validationError.hasErrors()) throw validationError
 
     return [this.createEvent('Account.accountCreated', { name: name.getValue(), type: type.getValue(), metadata: rawMetadata })]
   }
@@ -71,48 +90,107 @@ class AccountList extends Entity {
    * @param {string} rawName
    * @param {string} rawType
    * @param {AccountMetadata} rawMetadata
-   * @private
    */
-  async _accountCreated (rawName, rawType, rawMetadata) {
+  async accountCreated (rawName, rawType, rawMetadata) {
     this._accounts.push(this._accountClasses[rawType].tryCreate(new AccountName(rawName), rawMetadata[rawType]))
   }
 
   /**
-   * @param {string} command.name
-   * @param {string} command.time
-   * @param {string} command.payload.parentAccountName
-   * @param {string} command.payload.subAccountName
+   * @param {string} rawSubAccountName
+   * @param {string} rawParentAccountName
    * @returns {Event[]}
-   * @private
    */
-  _linkAccounts (command) {
-    const parentAccountName = new AccountName(command.payload.parentAccountName)
-    const subAccountName = new AccountName(command.payload.subAccountName)
+  linkAccounts (rawSubAccountName, rawParentAccountName) {
+    const validationError = new ValidationError()
 
-    const parentAccount = this._accounts.find(account => account.name.equals(parentAccountName))
-    if (!parentAccountName) {
-      throw new Error(`Parent account with name "${parentAccountName}" not found.`)
+    let subAccountName, parentAccountName
+
+    try {
+      subAccountName = new AccountName(rawSubAccountName)
+    } catch (err) {
+      validationError.addInvalidField('subAccountName', err.message)
     }
 
-    const subAccount = this._accounts.find(account => account.name.equals(subAccountName))
-    if (!subAccountName) {
-      throw new Error(`Sub account with name "${subAccountName}" not found.`)
+    try {
+      parentAccountName = new AccountName(rawParentAccountName)
+    } catch (err) {
+      validationError.addInvalidField('parentAccountName', err.message)
     }
 
-    if (parentAccount.equals(subAccount)) {
-      throw new Error(`Cannot link account "${subAccountName}" to itself.`)
+    let parentAccount, subAccount
+    if (!validationError.hasErrors()) {
+      subAccount = this._accounts.find(account => account.name.equals(subAccountName))
+      if (!subAccount) {
+        validationError.addInvalidField('subAccountName', `Sub account with name "${subAccountName}" not found.`)
+      }
+
+      parentAccount = this._accounts.find(account => account.name.equals(parentAccountName))
+      if (!parentAccount) {
+        validationError.addInvalidField('parentAccountName', `Parent account with name "${parentAccountName}" not found.`)
+      }
     }
 
-    return [this.createEvent('Account.accountsLinked', command.payload)]
+    if (!validationError.hasErrors() && parentAccount.equals(subAccount)) {
+      validationError.addInvalidField('parentAccountName', `Cannot link account "${parentAccountName}" to itself.`)
+    }
+
+    if (!validationError.hasErrors()) {
+      const linkPathParent = this._extractLinkPath(parentAccount)
+      const linkPathSub = this._extractLinkPath(subAccount)
+
+      if (linkPathParent.length + linkPathSub.length > 1000) {
+        validationError.addInvalidField(
+          'parentAccountName',
+          `Cannot link "${subAccountName}" to "${parentAccountName}" as that would exceed the maximum link depth of 1000.`
+        )
+
+        throw validationError
+      }
+
+      if (linkPathParent.includes(subAccount)) {
+        validationError.addInvalidField(
+          'parentAccountName',
+          `Cannot link account '${subAccountName}' to '${parentAccountName}' as that would close a circle: ` +
+          `${subAccountName} => ${parentAccountName} => ${[
+            ...linkPathParent.map(account => account.name),
+            ...linkPathSub.map(account => account.name)
+          ].join(' => ')}`
+        )
+      }
+    }
+
+    if (validationError.hasErrors()) throw validationError
+
+    return [this.createEvent('Account.accountsLinked', {
+      subAccountName: subAccountName.getValue(),
+      parentAccountName: parentAccountName.getValue()
+    })]
   }
 
   /**
-   * @param {Event} event
+   * @param {string} rawSubAccountName
+   * @param {string} rawParentAccountName
    * @returns {Promise<void>}
+   */
+  async accountsLinked (rawSubAccountName, rawParentAccountName) {
+    this._accounts.find(account => account.name.getValue() === rawSubAccountName).parent = new AccountName(rawParentAccountName)
+  }
+
+  /**
+   * @param {Account} startAccount
+   * @param {Account[]} path
+   * @returns {Account[]}
    * @private
    */
-  async _accountsLinked (event) {
-    this._accounts.find(account => account.name.getValue() === event.payload.subAccountName).parent = event.payload.parentAccountName
+  _extractLinkPath (startAccount, path = []) {
+    if (startAccount.parent === null) {
+      return path
+    }
+
+    const parentAccount = this._accounts.find(account => account.name.equals(startAccount.parent))
+    path.push(parentAccount)
+
+    return this._extractLinkPath(parentAccount, path)
   }
 }
 
