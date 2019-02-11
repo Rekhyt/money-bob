@@ -20,7 +20,6 @@
   },
   "homepage": "https://github.com/Rekhyt/money-bob#readme",
   "devDependencies": {
-    "@types/socket.io": "^2.1.2",
     "chai": "^4.2.0",
     "coveralls": "^3.0.2",
     "eslint": "^5.12.1",
