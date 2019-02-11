@@ -201,7 +201,9 @@ class AccountList extends RootEntity {
       validationError.addInvalidField('name', `Account with name "${name}" not found.`)
     }
 
-    const tags = rawTags.map(tag => {
+    const tags = rawTags.map((tag, index) => {
+      if (rawTags.includes(tag, index + 1)) return
+
       try {
         return new Tag(tag)
       } catch (err) {
@@ -210,6 +212,7 @@ class AccountList extends RootEntity {
     }).filter(tag => !!tag)
 
     if (validationError.hasErrors()) throw validationError
+    if (tags.length === 0) return []
 
     return [this.createEvent('Account.tagsAdded', { name: name.getValue(), tags: tags.map(tag => tag.getValue()) })]
   }
