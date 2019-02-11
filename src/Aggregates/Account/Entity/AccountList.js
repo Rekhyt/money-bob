@@ -39,6 +39,7 @@ class AccountList extends RootEntity {
 
     this.registerEvent('Account.accountCreated', event => this.accountCreated(event.payload.name, event.payload.type, event.payload.metadata))
     this.registerEvent('Account.accountsLinked', event => this.accountsLinked(event.payload.subAccountName, event.payload.parentAccountName))
+    this.registerEvent('Account.tagsAdded', event => this.tagsAdded(event.payload.name, event.payload.tags))
   }
 
   /**
@@ -211,6 +212,10 @@ class AccountList extends RootEntity {
     if (validationError.hasErrors()) throw validationError
 
     return [this.createEvent('Account.tagsAdded', { name: name.getValue(), tags: tags.map(tag => tag.getValue()) })]
+  }
+
+  async tagsAdded (rawName, rawTags) {
+    this._accounts.find(account => account.name.getValue() === rawName).addTags(rawTags.map(tag => new Tag(tag)))
   }
 
   /**
