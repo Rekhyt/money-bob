@@ -45,133 +45,141 @@ describe('AccountList', () => {
       subscribe: () => {}
     }
 
-    subjectUnderTest = new AccountList(logger, eventDispatcher, commandDispatcher, defaultAccountList(1100))
+    subjectUnderTest = new AccountList(logger, eventDispatcher, commandDispatcher)
+  })
+
+  describe('createAccount', () => {
+    it('should throw a proper validation error if the account name and type are invalid', () => {
+      let thrown = false
+
+      try {
+        subjectUnderTest.createAccount('', '', {})
+      } catch (err) {
+        thrown = true
+        err.should.be.an.instanceOf(ValidationError)
+        err.invalidFields.should.be.an('array').that.has.lengthOf(2)
+
+        err.invalidFields.should.have.nested.property('[0].fieldName', 'name')
+        err.invalidFields[0].message.should.match(/must not be an empty string/)
+
+        err.invalidFields.should.have.nested.property('[1].fieldName', 'type')
+        err.invalidFields[1].message.should.match(/must be one of/)
+      }
+
+      assert.ok(thrown)
+    })
+
+    it('should throw a proper validation error if an account with the same name already exists', () => {
+      let thrown = false
+
+      subjectUnderTest._accounts = defaultAccountList(1)
+
+      try {
+        subjectUnderTest.createAccount('account-1', 'debit', { debit: { debitorName: 'test' } })
+      } catch (err) {
+        thrown = true
+        err.should.be.an.instanceOf(ValidationError)
+        err.invalidFields.should.be.an('array').that.has.lengthOf(1)
+        err.invalidFields.should.have.nested.property('[0].fieldName', 'name')
+        err.invalidFields[0].message.should.match(/already exists/)
+      }
+
+      assert.ok(thrown, 'Expected a ValidationError to be thrown.')
+    })
   })
 
   describe('linkAccounts', () => {
     it('should throw a proper ValidationError if the parent account does not exist', () => {
       let thrown = false
-      let events = null
+
+      subjectUnderTest._accounts = defaultAccountList(1)
 
       try {
-        events = subjectUnderTest.linkAccounts('account-995', 'account-1101')
-        assert.fail('Expected a ValidationError to be thrown.')
+        subjectUnderTest.linkAccounts('account-1', 'account-2')
       } catch (err) {
         thrown = true
-        err.should.be.an.instanceof(ValidationError)
-        err.message.should.be.a('string').that.matches(/: parentAccountName$/)
-
-        const invalidField = err.invalidFields.find(field => field.fieldName === 'parentAccountName')
-        if (!invalidField || !invalidField.message) {
-          assert.fail('"parent account" was expected to be listed as an invalid field with proper message.')
-        }
-
-        invalidField.message.should.match(/^Parent account .+" not found.$/)
+        err.should.be.an.instanceOf(ValidationError)
+        err.invalidFields.should.be.an('array').that.has.lengthOf(1)
+        err.invalidFields.should.have.nested.property('[0].fieldName', 'parentAccountName')
+        err.invalidFields[0].message.should.match(/not found/)
       }
 
-      assert.strictEqual(thrown, true, 'Expected a ValidationError to be thrown.')
-      assert.strictEqual(events, null)
+      assert.ok(thrown, 'Expected a ValidationError to be thrown.')
     })
 
     it('should throw a proper ValidationError if the sub & parent accounts do not exist', () => {
       let thrown = false
-      let events = null
 
       try {
-        events = subjectUnderTest.linkAccounts('account-1101', 'account-1102')
-        assert.fail('Expected a ValidationError to be thrown.')
+        subjectUnderTest.linkAccounts('account-1101', 'account-1102')
       } catch (err) {
         thrown = true
-        err.should.be.an.instanceof(ValidationError)
-        err.message.should.be.a('string').that.matches(/: subAccountName, parentAccountName$/)
+        err.should.be.an.instanceOf(ValidationError)
+        err.invalidFields.should.be.an('array').that.has.lengthOf(2)
 
-        const invalidFieldSub = err.invalidFields.find(field => field.fieldName === 'subAccountName')
-        if (!invalidFieldSub || !invalidFieldSub.message) {
-          assert.fail('"subAccountName" was expected to be listed as an invalid field with proper message.')
-        }
+        err.invalidFields.should.have.nested.property('[0].fieldName', 'subAccountName')
+        err.invalidFields[0].message.should.match(/not found/)
 
-        const invalidFieldParent = err.invalidFields.find(field => field.fieldName === 'parentAccountName')
-        if (!invalidFieldParent || !invalidFieldParent.message) {
-          assert.fail('"parentAccountName" was expected to be listed as an invalid field with proper message.')
-        }
-
-        invalidFieldSub.message.should.match(/^Sub account .+" not found.$/)
-        invalidFieldParent.message.should.match(/^Parent account .+" not found.$/)
+        err.invalidFields.should.have.nested.property('[1].fieldName', 'parentAccountName')
+        err.invalidFields[0].message.should.match(/not found/)
       }
 
-      assert.strictEqual(thrown, true, 'Expected a ValidationError to be thrown.')
-      assert.strictEqual(events, null)
+      assert.ok(thrown, 'Expected a ValidationError to be thrown.')
     })
 
     it('should throw an error when linking an account to itself', () => {
       let thrown = false
-      let events = null
+
+      subjectUnderTest._accounts = defaultAccountList(1)
 
       try {
-        events = subjectUnderTest.linkAccounts('account-995', 'account-995')
-        assert.fail('Expected a ValidationError to be thrown.')
+        subjectUnderTest.linkAccounts('account-1', 'account-1')
       } catch (err) {
         thrown = true
-        err.should.be.an.instanceof(ValidationError)
-        err.message.should.be.a('string').that.matches(/: parentAccountName$/)
+        err.should.be.an.instanceOf(ValidationError)
+        err.invalidFields.should.be.an('array').that.has.lengthOf(1)
 
-        const invalidField = err.invalidFields.find(field => field.fieldName === 'parentAccountName')
-        if (!invalidField || !invalidField.message) {
-          assert.fail('"parentAccountName" was expected to be listed as an invalid field with proper message.')
-        }
-
-        invalidField.message.should.match(/^Cannot link account ".+" to itself.$/)
+        err.invalidFields.should.have.nested.property('[0].fieldName', 'parentAccountName')
+        err.invalidFields[0].message.should.match(/to itself/)
       }
 
-      assert.strictEqual(thrown, true, 'Expected a ValidationError to be thrown.')
-      assert.strictEqual(events, null)
+      assert.ok(thrown, 'Expected a ValidationError to be thrown.')
     })
 
     it('should throw an error when linking two accounts would create a circle', () => {
       let thrown = false
-      let events = null
+
+      subjectUnderTest._accounts = defaultAccountList(5)
 
       try {
-        events = subjectUnderTest.linkAccounts('account-1', 'account-995')
-        assert.fail('Expected a ValidationError to be thrown.')
+        subjectUnderTest.linkAccounts('account-1', 'account-5')
       } catch (err) {
         thrown = true
-        err.should.be.an.instanceof(ValidationError)
-        err.message.should.be.a('string').that.matches(/: parentAccountName$/)
-
-        const invalidField = err.invalidFields.find(field => field.fieldName === 'parentAccountName')
-        if (!invalidField || !invalidField.message) {
-          assert.fail('"parentAccountName" was expected to be listed as an invalid field with proper message.')
-        }
-
-        invalidField.message.should.match(/^Cannot link account .+ as that would close a circle:/)
+        err.should.be.an.instanceOf(ValidationError)
+        err.invalidFields.should.be.an('array').that.has.lengthOf(1)
+        err.invalidFields.should.have.nested.property('[0].fieldName', 'parentAccountName')
+        err.invalidFields[0].message.should.match(/close a circle/)
       }
 
-      assert.strictEqual(thrown, true, 'Expected a ValidationError to be thrown.')
-      assert.strictEqual(events, null)
+      assert.ok(thrown, 'Expected a ValidationError to be thrown.')
     })
 
     it('should throw an error when linking two accounts would exceed the maximum branch path length', () => {
       let thrown = false
-      let events = null
+
+      subjectUnderTest._accounts = defaultAccountList(1001)
 
       try {
-        events = subjectUnderTest.linkAccounts('account-1001', 'account-1000')
+        subjectUnderTest.linkAccounts('account-1001', 'account-1000')
       } catch (err) {
         thrown = true
-        err.should.be.an.instanceof(ValidationError)
-        err.message.should.be.a('string').that.matches(/: parentAccountName$/)
-
-        const invalidField = err.invalidFields.find(field => field.fieldName === 'parentAccountName')
-        if (!invalidField || !invalidField.message) {
-          assert.fail('"parentAccountName" was expected to be listed as an invalid field with proper message.')
-        }
-
-        invalidField.message.should.match(/^Cannot link .+ exceed the maximum link depth of 1000.$/)
+        err.should.be.an.instanceOf(ValidationError)
+        err.invalidFields.should.be.an('array').that.has.lengthOf(1)
+        err.invalidFields.should.have.nested.property('[0].fieldName', 'parentAccountName')
+        err.invalidFields[0].message.should.match(/exceed the maximum link depth/)
       }
 
-      assert.strictEqual(thrown, true, 'Expected a ValidationError to be thrown.')
-      assert.strictEqual(events, null)
+      assert.ok(thrown, 'Expected a ValidationError to be thrown.')
     })
   })
 })
