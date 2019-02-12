@@ -31,7 +31,8 @@
     "eslint-standard": "^1.0.2",
     "mocha": "^5.2.0",
     "nodemon": "^1.18.9",
-    "nyc": "^13.2.0"
+    "nyc": "^13.2.0",
+    "proxyquire": "^2.1.0"
   },
   "dependencies": {
     "body-parser": "^1.18.3",
