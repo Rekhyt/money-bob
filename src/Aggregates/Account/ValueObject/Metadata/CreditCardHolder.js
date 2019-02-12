@@ -1,9 +1,9 @@
 const { StringValue } = require('ddd-js')
 
-class Holder extends StringValue {
+class CreditCardHolder extends StringValue {
   constructor (value) {
     super(value, false)
   }
 }
 
-module.exports = Holder
+module.exports = CreditCardHolder

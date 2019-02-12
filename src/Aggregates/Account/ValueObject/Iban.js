@@ -14,14 +14,6 @@ class Iban extends StringValue {
   }
 
   /**
-   * @param {Iban} value
-   * @returns {boolean}
-   */
-  equals (value) {
-    return value instanceof Iban && this._value === value.getValue()
-  }
-
-  /**
    * @returns {string}
    */
   toString () {

@@ -1,7 +1,7 @@
 const Account = require('./Account')
 const CreditCardNumber = require('../ValueObject/CreditCardNumber')
 const CreditCardType = require('../ValueObject/CreditCardType')
-const Holder = require('../ValueObject/Metadata/Holder')
+const CreditCardHolder = require('../ValueObject/Metadata/CreditCardHolder')
 const Institute = require('../ValueObject/Metadata/Institute')
 
 class CreditCard extends Account {
@@ -9,7 +9,7 @@ class CreditCard extends Account {
    * @param {AccountName} name
    * @param {Institute} institute
    * @param {CreditCardType} type
-   * @param {Holder} holder
+   * @param {CreditCardHolder} holder
    * @param {CreditCardNumber} number
    */
   constructor (name, institute, type, holder, number) {
@@ -36,7 +36,7 @@ class CreditCard extends Account {
       name,
       new Institute(rawTypeMetadata.institute),
       new CreditCardType(rawTypeMetadata.type),
-      new Holder(rawTypeMetadata.holder),
+      new CreditCardHolder(rawTypeMetadata.holder),
       new CreditCardNumber(rawTypeMetadata.number)
     )
   }
