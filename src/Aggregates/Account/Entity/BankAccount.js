@@ -13,9 +13,30 @@ class BankAccount extends Account {
   constructor (name, institute, iban, bic) {
     super(name)
 
-    this.institute = institute
-    this.iban = iban
-    this.bic = bic
+    this._institute = institute
+    this._iban = iban
+    this._bic = bic
+  }
+
+  /**
+   * @returns {Institute}
+   */
+  get institute () {
+    return this._institute
+  }
+
+  /**
+   * @returns {Iban}
+   */
+  get iban () {
+    return this._iban
+  }
+
+  /**
+   * @returns {Bic}
+   */
+  get bic () {
+    return this._bic
   }
 
   /**
@@ -24,15 +45,12 @@ class BankAccount extends Account {
    * @returns {BankAccount}
    */
   static tryCreate (name, rawTypeMetadata) {
-    const missingFields = super.validateMetadataFieldsExisting(['institute', 'number', 'bic'], rawTypeMetadata)
-    if (missingFields.length > 0) {
-      throw new Error(`Missing required field(s) in metadata: ${missingFields.join(', ')}`)
-    }
+    super.validateMetadataFieldsExisting(['institute', 'iban', 'bic'], rawTypeMetadata)
 
     return new BankAccount(
       name,
       new Institute(rawTypeMetadata.institute),
-      new Iban(rawTypeMetadata.number),
+      new Iban(rawTypeMetadata.iban),
       new Bic(rawTypeMetadata.bic)
     )
   }

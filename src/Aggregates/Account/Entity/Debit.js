@@ -9,7 +9,14 @@ class Debit extends Account {
   constructor (name, debitorName) {
     super(name)
 
-    this.debitorName = debitorName
+    this._debitorName = debitorName
+  }
+
+  /**
+   * @returns {DebitorName}
+   */
+  get debitorName () {
+    return this._debitorName
   }
 
   /**
@@ -18,10 +25,7 @@ class Debit extends Account {
    * @returns {Debit}
    */
   static tryCreate (name, rawTypeMetadata) {
-    const missingFields = Account.validateMetadataFieldsExisting(['debitorName'], rawTypeMetadata)
-    if (missingFields.length > 0) {
-      throw new Error(`Missing required field(s) in metadata: ${missingFields.join(', ')}`)
-    }
+    super.validateMetadataFieldsExisting(['debitorName'], rawTypeMetadata)
 
     return new Debit(name, new DebitorName(rawTypeMetadata.debitorName))
   }

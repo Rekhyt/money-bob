@@ -10,7 +10,14 @@ class PayPal extends Account {
   constructor (name, emailAddress) {
     super(name)
 
-    this.institute = emailAddress
+    this._emailAddress = emailAddress
+  }
+
+  /**
+   * @returns {EmailAddress}
+   */
+  get emailAddress () {
+    return this._emailAddress
   }
 
   /**
@@ -19,10 +26,7 @@ class PayPal extends Account {
    * @returns {PayPal}
    */
   static tryCreate (name, rawTypeMetadata) {
-    const missingFields = Account.validateMetadataFieldsExisting(['emailAddress'], rawTypeMetadata)
-    if (missingFields.length > 0) {
-      throw new Error(`Missing required field(s) in metadata: ${missingFields.join(', ')}`)
-    }
+    super.validateMetadataFieldsExisting(['emailAddress'], rawTypeMetadata)
 
     return new PayPal(name, new EmailAddress(rawTypeMetadata.emailAddress))
   }

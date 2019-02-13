@@ -1,3 +1,5 @@
+const { ValidationError } = require('ddd-js')
+
 /**
  * @abstract
  */
@@ -8,9 +10,30 @@ class Account {
    * @param {Tag[]?} tags
    */
   constructor (name, parent = null, tags = []) {
-    this.name = name
-    this.parent = parent
-    this.tags = tags
+    this._name = name
+    this._parent = parent
+    this._tags = tags
+  }
+
+  /**
+   * @returns {AccountName}
+   */
+  get name () {
+    return this._name
+  }
+
+  /**
+   * @returns {Account}
+   */
+  get parent () {
+    return this._parent
+  }
+
+  /**
+   * @returns {Tag[]}
+   */
+  get tags () {
+    return this._tags
   }
 
   /**
@@ -18,23 +41,29 @@ class Account {
    * @returns {boolean}
    */
   equals (account) {
-    return account.constructor.name === this.constructor.name && account.name.equals(this.name)
+    return account.constructor.name === this.constructor.name && account._name.equals(this._name)
   }
 
   /**
    * @param {Tag[]} tags
    */
   addTags (tags) {
-    this.tags.push(...tags.filter(tag => !this.tags.find(existingTag => tag.equals(existingTag))))
+    this._tags.push(...tags.filter(tag => !this._tags.find(existingTag => tag.equals(existingTag))))
   }
 
   /**
    * @param {string[]} requiredFields
    * @param {*} metadata
-   * @returns {*}
+   * @throws ValidationError if a required metadata field is missing
    */
   static validateMetadataFieldsExisting (requiredFields, metadata) {
-    return requiredFields.filter(key => !metadata.hasOwnProperty(key))
+    const missingFields = requiredFields.filter(key => !metadata.hasOwnProperty(key))
+
+    if (missingFields.length === 0) return
+
+    throw new ValidationError(
+      missingFields.map(fieldName => { return { fieldName, message: `${fieldName} is a required field.` } })
+    )
   }
 }
 

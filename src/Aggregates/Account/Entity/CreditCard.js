@@ -15,10 +15,38 @@ class CreditCard extends Account {
   constructor (name, institute, type, holder, number) {
     super(name)
 
-    this.institute = institute
-    this.type = type
-    this.holder = holder
-    this.number = number
+    this._institute = institute
+    this._type = type
+    this._holder = holder
+    this._number = number
+  }
+
+  /**
+   * @returns {Institute}
+   */
+  get institute () {
+    return this._institute
+  }
+
+  /**
+   * @returns {CreditCardType}
+   */
+  get type () {
+    return this._type
+  }
+
+  /**
+   * @returns {CreditCardHolder}
+   */
+  get holder () {
+    return this._holder
+  }
+
+  /**
+   * @returns {CreditCardNumber}
+   */
+  get number () {
+    return this._number
   }
 
   /**
@@ -27,10 +55,7 @@ class CreditCard extends Account {
    * @returns {CreditCard}
    */
   static tryCreate (name, rawTypeMetadata) {
-    const missingFields = Account.validateMetadataFieldsExisting(['institute', 'type', 'holder', 'number'], rawTypeMetadata)
-    if (missingFields.length > 0) {
-      throw new Error(`Missing required field(s) in metadata: ${missingFields.join(', ')}`)
-    }
+    super.validateMetadataFieldsExisting(['institute', 'type', 'holder', 'number'], rawTypeMetadata)
 
     return new CreditCard(
       name,
