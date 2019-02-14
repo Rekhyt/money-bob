@@ -6,7 +6,9 @@ chai.should()
 const { ValidationError } = require('ddd-js')
 const AccountList = require('../../../../../src/Aggregates/Account/Entity/AccountList')
 const Account = require('../../../../../src/Aggregates/Account/Entity/Account')
+const Debit = require('../../../../../src/Aggregates/Account/Entity/Debit')
 const AccountName = require('../../../../../src/Aggregates/Account/ValueObject/AccountName')
+const DebitorName = require('../../../../../src/Aggregates/Account/ValueObject/Metadata/DebitorName')
 
 const AccountImpl = class extends Account {}
 
@@ -163,6 +165,20 @@ describe('AccountList', () => {
       assert.deepStrictEqual(events[0], expectedEvent)
 
       clock.restore()
+    })
+  })
+
+  describe('accountCreated', () => {
+    it('should add the account to the list', async () => {
+      const expectedAccountName = new AccountName('account-1')
+      const expectedAccountDebitor = new DebitorName('Joe')
+
+      await subjectUnderTest.accountCreated('account-1', 'debit', { debit: { debitorName: 'Joe' } })
+
+      subjectUnderTest._accounts.should.be.an('array').that.has.lengthOf(1)
+      subjectUnderTest._accounts[0].should.be.an.instanceOf(Debit)
+      assert.ok(subjectUnderTest._accounts[0].name.equals(expectedAccountName))
+      assert.ok(subjectUnderTest._accounts[0].debitorName.equals(expectedAccountDebitor))
     })
   })
 
