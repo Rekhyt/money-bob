@@ -72,11 +72,17 @@ class AccountList extends RootEntity {
       validationError.addInvalidField('metadata', `No metadata provided for account type "${type}".`)
     }
 
-    if (type && rawMetadata[type] && typeof rawMetadata[type] !== 'object') {
+    if (
+      type && rawMetadata[type] &&
+      (typeof rawMetadata[type] !== 'object' || rawMetadata[type].constructor.name === 'Array')
+    ) {
       validationError.addInvalidField('metadata', `Expected metadata to be an object.`)
     }
 
-    if (type && rawMetadata[type] && typeof rawMetadata[type] === 'object') {
+    if (
+      type && rawMetadata[type] &&
+      typeof rawMetadata[type] === 'object' && rawMetadata[type].constructor.name !== 'Array'
+    ) {
       try {
         this._accountClasses[type].tryCreate(name, rawMetadata[type])
       } catch (err) {

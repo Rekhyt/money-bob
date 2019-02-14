@@ -7,7 +7,7 @@ class Iban extends StringValue {
    */
   constructor (value) {
     if (!ibantools.isValidIBAN(value)) {
-      throw new InvalidArgumentError(`Provided value is not a valid IBAN: ${value}"`)
+      throw new InvalidArgumentError(`Provided value is not a valid IBAN: "${value}"`)
     }
 
     super(ibantools.electronicFormatIBAN(value))

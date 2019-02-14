@@ -1,4 +1,5 @@
 const assert = require('assert')
+const sinon = require('sinon')
 const chai = require('chai')
 chai.should()
 
@@ -85,6 +86,83 @@ describe('AccountList', () => {
       }
 
       assert.ok(thrown, 'Expected a ValidationError to be thrown.')
+    })
+
+    it('should throw a proper error if the metadata for the account type is missing', () => {
+      let thrown = false
+
+      try {
+        subjectUnderTest.createAccount('account-1', 'bankaccount', {})
+      } catch (err) {
+        thrown = true
+        err.should.be.an.instanceOf(ValidationError)
+        err.invalidFields.should.be.an('array').that.has.lengthOf(1)
+        err.invalidFields.should.have.nested.property('[0].fieldName', 'metadata')
+        err.invalidFields[0].message.should.match(/^No metadata provided/)
+      }
+
+      assert.ok(thrown, 'Expected a ValidationError to be thrown.')
+    })
+
+    it('should throw a proper error if the metadata for the account type is not an object', () => {
+      let thrown = false
+
+      try {
+        subjectUnderTest.createAccount('account-1', 'bankaccount', { bankaccount: [] })
+      } catch (err) {
+        thrown = true
+        err.should.be.an.instanceOf(ValidationError)
+        err.invalidFields.should.be.an('array').that.has.lengthOf(1)
+        err.invalidFields.should.have.nested.property('[0].fieldName', 'metadata')
+        err.invalidFields[0].message.should.match(/^Expected metadata to be an object./)
+      }
+
+      assert.ok(thrown, 'Expected a ValidationError to be thrown.')
+    })
+
+    it('should throw a proper error if metadata is invalid', () => {
+      let thrown = false
+
+      try {
+        subjectUnderTest.createAccount('account-1', 'bankaccount', {
+          bankaccount: {
+            institute: 'test',
+            iban: '123456789',
+            bic: '987654321'
+          }
+        })
+      } catch (err) {
+        thrown = true
+        err.should.be.an.instanceOf(ValidationError)
+        err.invalidFields.should.be.an('array').that.has.lengthOf(1)
+        err.invalidFields.should.have.nested.property('[0].fieldName', 'metadata')
+        err.invalidFields[0].message.should.match(/^Provided value is not a valid IBAN/)
+      }
+
+      assert.ok(thrown, 'Expected a ValidationError to be thrown.')
+    })
+
+    it('should return the accountCreated event', () => {
+      const clock = sinon.useFakeTimers({ now: Date.now() })
+
+      const expectedEvent = {
+        name: 'Account.accountCreated',
+        payload: {
+          name: 'account-1',
+          type: 'debit',
+          metadata: { debit: { debitorName: 'Joe' } }
+        },
+        time: new Date().toISOString()
+      }
+
+      const events = subjectUnderTest.createAccount(
+        'account-1',
+        'debit', { debit: { debitorName: 'Joe' } }
+      )
+
+      assert.deepStrictEqual(events[0], expectedEvent)
+
+      clock.restore()
     })
   })
 
