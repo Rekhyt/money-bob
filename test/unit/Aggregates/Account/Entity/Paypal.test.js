@@ -6,6 +6,7 @@ const AccountName = require('../../../../../src/Aggregates/Account/ValueObject/A
 describe('Paypal', () => {
   describe('tryCreate()', () => {
     it('should throw an error if a required metadata field is missing', () => {
+      // noinspection JSCheckFunctionSignatures
       assert.throws(
         () => Paypal.tryCreate(new AccountName('test'), { someNonsenseField: 'containing nonsense' }),
         ValidationError

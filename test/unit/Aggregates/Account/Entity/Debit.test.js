@@ -6,6 +6,7 @@ const AccountName = require('../../../../../src/Aggregates/Account/ValueObject/A
 describe('Debit', () => {
   describe('tryCreate()', () => {
     it('should throw an error if a required metadata field is missing', () => {
+      // noinspection JSCheckFunctionSignatures
       assert.throws(
         () => Debit.tryCreate(new AccountName('test'), { someNonsenseField: 'containing nonsense' }),
         ValidationError

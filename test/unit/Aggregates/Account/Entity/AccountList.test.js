@@ -33,19 +33,19 @@ describe('AccountList', () => {
     }
 
     logger = {
-      trace: (...args) => {},
+      // trace: (...args) => {},
       debug: (...args) => {},
-      info: (...args) => {},
-      warn: (...args) => console.log(args),
+      // info: (...args) => {},
+      // warn: (...args) => console.log(args),
       error: (...args) => console.log(args)
     }
 
     eventDispatcher = {
-      subscribe: () => {}
+      // subscribe: () => {}
     }
 
     commandDispatcher = {
-      subscribe: () => {}
+      // subscribe: () => {}
     }
 
     subjectUnderTest = new AccountList(logger, eventDispatcher, commandDispatcher)
@@ -56,6 +56,7 @@ describe('AccountList', () => {
       let thrown = false
 
       try {
+        // noinspection JSCheckFunctionSignatures
         subjectUnderTest.createAccount('', '', {})
       } catch (err) {
         thrown = true
@@ -78,6 +79,7 @@ describe('AccountList', () => {
       subjectUnderTest._accounts = defaultAccountList(1)
 
       try {
+        // noinspection JSCheckFunctionSignatures
         subjectUnderTest.createAccount('account-1', 'debit', { debit: { debitorName: 'test' } })
       } catch (err) {
         thrown = true
@@ -94,6 +96,7 @@ describe('AccountList', () => {
       let thrown = false
 
       try {
+        // noinspection JSCheckFunctionSignatures
         subjectUnderTest.createAccount('account-1', 'bankaccount', {})
       } catch (err) {
         thrown = true
@@ -110,6 +113,7 @@ describe('AccountList', () => {
       let thrown = false
 
       try {
+        // noinspection JSCheckFunctionSignatures
         subjectUnderTest.createAccount('account-1', 'bankaccount', { bankaccount: [] })
       } catch (err) {
         thrown = true
@@ -126,6 +130,7 @@ describe('AccountList', () => {
       let thrown = false
 
       try {
+        // noinspection JSCheckFunctionSignatures
         subjectUnderTest.createAccount('account-1', 'bankaccount', {
           bankaccount: {
             institute: 'test',
@@ -157,6 +162,7 @@ describe('AccountList', () => {
         time: new Date().toISOString()
       }
 
+      // noinspection JSCheckFunctionSignatures
       const events = subjectUnderTest.createAccount(
         'account-1',
         'debit', { debit: { debitorName: 'Joe' } }
@@ -173,6 +179,7 @@ describe('AccountList', () => {
       const expectedAccountName = new AccountName('account-1')
       const expectedAccountDebitor = new DebitorName('Joe')
 
+      // noinspection JSCheckFunctionSignatures
       await subjectUnderTest.accountCreated('account-1', 'debit', { debit: { debitorName: 'Joe' } })
 
       subjectUnderTest._accounts.should.be.an('array').that.has.lengthOf(1)
