@@ -32,7 +32,8 @@
     "mocha": "^5.2.0",
     "nodemon": "^1.18.9",
     "nyc": "^13.2.0",
-    "proxyquire": "^2.1.0"
+    "proxyquire": "^2.1.0",
+    "sinon": "^7.2.3"
   },
   "dependencies": {
     "body-parser": "^1.18.3",
