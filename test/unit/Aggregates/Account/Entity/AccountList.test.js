@@ -32,20 +32,23 @@ describe('AccountList', () => {
       return accounts
     }
 
+    // noinspection JSUnusedGlobalSymbols
     logger = {
-      // trace: (...args) => {},
+      trace: (...args) => {},
       debug: (...args) => {},
-      // info: (...args) => {},
-      // warn: (...args) => console.log(args),
+      info: (...args) => {},
+      warn: (...args) => console.log(args),
       error: (...args) => console.log(args)
     }
 
+    // noinspection JSUnusedGlobalSymbols
     eventDispatcher = {
-      // subscribe: () => {}
+      subscribe: () => {}
     }
 
+    // noinspection JSUnusedGlobalSymbols
     commandDispatcher = {
-      // subscribe: () => {}
+      subscribe: () => {}
     }
 
     subjectUnderTest = new AccountList(logger, eventDispatcher, commandDispatcher)
