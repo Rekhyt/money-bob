@@ -193,6 +193,24 @@ describe('AccountList', () => {
   })
 
   describe('linkAccounts', () => {
+    it('should throw a proper ValidationError if the sub or parent account name is invalid', () => {
+      let thrown = false
+
+      try {
+        subjectUnderTest.linkAccounts('', '')
+      } catch (err) {
+        thrown = true
+        err.should.be.an.instanceOf(ValidationError)
+        err.invalidFields.should.be.an('array').that.has.lengthOf(2)
+        err.invalidFields.should.have.nested.property('[0].fieldName', 'subAccountName')
+        err.invalidFields.should.have.nested.property('[1].fieldName', 'parentAccountName')
+        err.invalidFields[0].message.should.match(/must not be an empty string.$/)
+        err.invalidFields[1].message.should.match(/must not be an empty string.$/)
+      }
+
+      assert.ok(thrown, 'Expected a ValidationError to be thrown.')
+    })
+
     it('should throw a proper ValidationError if the parent account does not exist', () => {
       let thrown = false
 
@@ -256,7 +274,7 @@ describe('AccountList', () => {
       subjectUnderTest._accounts = defaultAccountList(5)
 
       try {
-        subjectUnderTest.linkAccounts('account-1', 'account-5')
+        subjectUnderTest.linkAccounts('account-2', 'account-5')
       } catch (err) {
         thrown = true
         err.should.be.an.instanceOf(ValidationError)
@@ -284,6 +302,29 @@ describe('AccountList', () => {
       }
 
       assert.ok(thrown, 'Expected a ValidationError to be thrown.')
+    })
+
+    it('should return an Account.accountsLinked event if all checks pass', () => {
+      const clock = sinon.useFakeTimers({ now: Date.now() })
+
+      subjectUnderTest._accounts = [
+        new AccountImpl(new AccountName('account-1')),
+        new AccountImpl(new AccountName('account-2'))
+      ]
+
+      assert.deepStrictEqual(
+        subjectUnderTest.linkAccounts('account-1', 'account-2'),
+        [{
+          name: 'Account.accountsLinked',
+          time: new Date().toISOString(),
+          payload: {
+            subAccountName: 'account-1',
+            parentAccountName: 'account-2'
+          }
+        }]
+      )
+
+      clock.restore()
     })
   })
 })
