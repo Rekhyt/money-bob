@@ -327,4 +327,21 @@ describe('AccountList', () => {
       clock.restore()
     })
   })
+
+  describe('accountsLinked', () => {
+    it('should should set the parent account as the sub account\'s parent', async () => {
+      const expectedParent = new AccountName('account-2')
+
+      subjectUnderTest._accounts = [
+        new AccountImpl(new AccountName('account-1')),
+        new AccountImpl(expectedParent)
+      ]
+
+      // noinspection JSCheckFunctionSignatures
+      await subjectUnderTest.accountsLinked('account-1', 'account-2')
+
+      subjectUnderTest._accounts[0].parent.should.be.an.instanceOf(AccountName)
+      assert.ok(subjectUnderTest._accounts[0].parent.equals(new AccountName('account-2')))
+    })
+  })
 })

@@ -45,6 +45,13 @@ class Account {
   }
 
   /**
+   * @param {AccountName} parentAccountName
+   */
+  linkAccount (parentAccountName) {
+    this._parent = parentAccountName
+  }
+
+  /**
    * @param {Tag[]} tags
    */
   addTags (tags) {

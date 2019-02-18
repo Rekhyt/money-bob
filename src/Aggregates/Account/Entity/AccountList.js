@@ -176,7 +176,7 @@ class AccountList extends RootEntity {
    * @returns {Promise<void>}
    */
   async accountsLinked (rawSubAccountName, rawParentAccountName) {
-    this._accounts.find(account => account.name.getValue() === rawSubAccountName).parent = new AccountName(rawParentAccountName)
+    this._accounts.find(account => account.name.getValue() === rawSubAccountName).linkAccount(new AccountName(rawParentAccountName))
   }
 
   /**
@@ -217,6 +217,11 @@ class AccountList extends RootEntity {
     return [this.createEvent('Account.tagsAdded', { name: name.getValue(), tags: tags.map(tag => tag.getValue()) })]
   }
 
+  /**
+   * @param {string} rawName
+   * @param {string} rawTags
+   * @returns {Promise<void>}
+   */
   async tagsAdded (rawName, rawTags) {
     this._accounts.find(account => account.name.getValue() === rawName).addTags(rawTags.map(tag => new Tag(tag)))
   }
