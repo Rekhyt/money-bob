@@ -1,6 +1,6 @@
 const assert = require('assert')
 
-const MetadataLiability = require('../../../../src/Aggregates/Account/ValueObject/MetadataLiability')
+const MetadataLiability = require('../../../../../src/Aggregates/Account/ValueObject/MetadataLiability')
 
 const DebitorFn = {}
 

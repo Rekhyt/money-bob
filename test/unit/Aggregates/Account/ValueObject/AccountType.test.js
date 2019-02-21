@@ -1,7 +1,7 @@
 const assert = require('assert')
 const { InvalidArgumentError } = require('ddd-js')
 
-const AccountType = require('../../../../src/Aggregates/Account/ValueObject/AccountType')
+const AccountType = require('../../../../../src/Aggregates/Account/ValueObject/AccountType')
 
 describe('AccountType', () => {
   it('should throw an error if value is not an enum value', () => {

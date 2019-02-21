@@ -1,6 +1,6 @@
 const assert = require('assert')
 
-const MetadataBankAccount = require('../../../../src/Aggregates/Account/ValueObject/MetadataBankAccount')
+const MetadataBankAccount = require('../../../../../src/Aggregates/Account/ValueObject/MetadataBankAccount')
 
 const InstituteFn = {}
 const IbanFn = {}

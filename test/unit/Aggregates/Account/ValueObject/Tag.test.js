@@ -1,7 +1,7 @@
 const assert = require('assert')
 const { InvalidArgumentError } = require('ddd-js')
 
-const Tag = require('../../../../src/Aggregates/Account/ValueObject/Tag')
+const Tag = require('../../../../../src/Aggregates/Account/ValueObject/Tag')
 
 describe('Tag', () => {
   it('should throw an error if value is not string or empty string', () => {

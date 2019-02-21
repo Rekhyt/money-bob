@@ -3,7 +3,7 @@ const proxyquire = require('proxyquire')
 const { InvalidArgumentError } = require('ddd-js')
 
 const ibantools = {}
-const Bic = proxyquire('../../../../src/Aggregates/Account/ValueObject/Bic', { ibantools })
+const Bic = proxyquire('../../../../../src/Aggregates/Account/ValueObject/Bic', { ibantools })
 
 describe('Bic', () => {
   it('should throw an error if value is not a valid BIC', () => {

@@ -3,7 +3,7 @@ const proxyquire = require('proxyquire')
 const { InvalidArgumentError } = require('ddd-js')
 
 const ibantools = {}
-const Iban = proxyquire('../../../../src/Aggregates/Account/ValueObject/Iban', { ibantools })
+const Iban = proxyquire('../../../../../src/Aggregates/Account/ValueObject/Iban', { ibantools })
 
 describe('Iban', () => {
   it('should throw an error if value is not a valid IBAN', () => {

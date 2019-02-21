@@ -3,7 +3,7 @@ const proxyquire = require('proxyquire')
 const { InvalidArgumentError } = require('ddd-js')
 
 const cardValidator = {}
-const CreditCardNumber = proxyquire('../../../../src/Aggregates/Account/ValueObject/CreditCardNumber', {
+const CreditCardNumber = proxyquire('../../../../../src/Aggregates/Account/ValueObject/CreditCardNumber', {
   'card-validator': cardValidator
 })
 

@@ -1,6 +1,6 @@
 const assert = require('assert')
 
-const MetadataDebit = require('../../../../src/Aggregates/Account/ValueObject/MetadataDebit')
+const MetadataDebit = require('../../../../../src/Aggregates/Account/ValueObject/MetadataDebit')
 
 const DebitorFn = {}
 

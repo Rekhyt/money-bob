@@ -1,6 +1,6 @@
 const assert = require('assert')
 
-const MetadataPayPal = require('../../../../src/Aggregates/Account/ValueObject/MetadataPayPal')
+const MetadataPayPal = require('../../../../../src/Aggregates/Account/ValueObject/MetadataPayPal')
 
 const EmailFn = {}
 

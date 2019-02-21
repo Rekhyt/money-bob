@@ -1,6 +1,6 @@
 const assert = require('assert')
 
-const MetadataCreditCard = require('../../../../src/Aggregates/Account/ValueObject/MetadataCreditCard')
+const MetadataCreditCard = require('../../../../../src/Aggregates/Account/ValueObject/MetadataCreditCard')
 
 const InstituteFn = {}
 const CCTypeFn = {}
