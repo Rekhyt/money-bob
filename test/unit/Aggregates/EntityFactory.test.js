@@ -35,14 +35,14 @@ describe('EntityFactory', () => {
   })
 
   describe('createAccountList()', () => {
-    it('should create an empty AccountList', () => {
+    it('should create an empty AccountList entity', () => {
       const accountList = subjectUnderTest.createAccountList()
 
       accountList.should.be.an.instanceOf(AccountList)
       accountList._accounts.should.be.an('array').with.lengthOf(0)
     })
 
-    it('should create an AccountList with given accounts', () => {
+    it('should create an AccountList entity with given accounts', () => {
       const accountList = subjectUnderTest.createAccountList([1, 2, 3])
 
       accountList.should.be.an.instanceOf(AccountList)
