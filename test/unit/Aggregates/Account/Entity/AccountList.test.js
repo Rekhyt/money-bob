@@ -54,6 +54,132 @@ describe('AccountList', () => {
     subjectUnderTest = new AccountList(logger, eventDispatcher, commandDispatcher)
   })
 
+  describe('constructor', () => {
+    it('should register all command handlers', () => {
+      const expectedCommands = ['Account.createAccount', 'Account.linkAccounts', 'Account.addTags']
+
+      let subscribeCallCount = 0
+      commandDispatcher.subscribe = command => {
+        assert.deepStrictEqual(command, expectedCommands[subscribeCallCount])
+        subscribeCallCount++
+      }
+
+      const accountList = new AccountList(logger, commandDispatcher, eventDispatcher)
+      accountList.should.be.an.instanceOf(AccountList)
+
+      assert.strictEqual(subscribeCallCount, expectedCommands.length)
+    })
+
+    it('should register all event handlers', () => {
+      const expectedEvents = ['Account.accountCreated', 'Account.accountsLinked', 'Account.tagsAdded']
+
+      let subscribeCallCount = 0
+      eventDispatcher.subscribe = event => {
+        assert.deepStrictEqual(event, expectedEvents[subscribeCallCount])
+        subscribeCallCount++
+      }
+
+      const accountList = new AccountList(logger, commandDispatcher, eventDispatcher)
+      accountList.should.be.an.instanceOf(AccountList)
+
+      assert.strictEqual(subscribeCallCount, expectedEvents.length)
+    })
+  })
+
+  describe('command & event handling functions', () => {
+    it('should spread the command payloads and pass them to the proper class methods', () => {
+      const commands = [
+        {
+          name: 'Account.createAccount',
+          payload: {
+            name: 'account-1',
+            type: 'bankaccount',
+            metadata: { iban: '345678962298' }
+          }
+        },
+        {
+          name: 'Account.linkAccounts',
+          payload: {
+            subAccountName: 'account-2',
+            parentAccountName: 'account-1'
+          }
+        },
+        {
+          name: 'Account.addTags',
+          payload: {
+            name: 'account-1',
+            tags: ['car', 'service', 'repair']
+          }
+        }
+      ]
+
+      commands.forEach(command => {
+        let called = false
+        subjectUnderTest[command.name.split('.')[1]] = (...args) => {
+          called = true
+          const payloadValues = Object.values(command.payload)
+          args.forEach((arg, index) => {
+            assert.deepStrictEqual(arg, payloadValues[index])
+          })
+        }
+
+        subjectUnderTest.execute({
+          name: command.name,
+          time: new Date().toISOString(),
+          payload: command.payload
+        })
+
+        assert.ok(called, `Handler for command "${command.name}" was not called.`)
+      })
+    })
+
+    it('should spread the event payloads and pass them to the proper class methods', async () => {
+      const events = [
+        {
+          name: 'Account.accountCreated',
+          payload: {
+            name: 'account-1',
+            type: 'bankaccount',
+            metadata: { iban: '345678962298' }
+          }
+        },
+        {
+          name: 'Account.accountsLinked',
+          payload: {
+            subAccountName: 'account-2',
+            parentAccountName: 'account-1'
+          }
+        },
+        {
+          name: 'Account.tagsAdded',
+          payload: {
+            name: 'account-1',
+            tags: ['car', 'service', 'repair']
+          }
+        }
+      ]
+
+      events.forEach(async event => {
+        let called = false
+        subjectUnderTest[event.name.split('.')[1]] = (...args) => {
+          called = true
+          const payloadValues = Object.values(event.payload)
+          args.forEach((arg, index) => {
+            assert.deepStrictEqual(arg, payloadValues[index])
+          })
+        }
+
+        await subjectUnderTest.apply({
+          name: event.name,
+          time: new Date().toISOString(),
+          payload: event.payload
+        })
+
+        assert.ok(called, `Handler for event "${event.name}" was not called.`)
+      })
+    })
+  })
+
   describe('createAccount', () => {
     it('should throw a proper validation error if the account name and type are invalid', () => {
       let thrown = false
@@ -342,6 +468,105 @@ describe('AccountList', () => {
 
       subjectUnderTest._accounts[0].parent.should.be.an.instanceOf(AccountName)
       assert.ok(subjectUnderTest._accounts[0].parent.equals(new AccountName('account-2')))
+    })
+  })
+
+  describe('addTags', () => {
+    it('should throw a proper ValidationError if the account name is invalid', () => {
+      let thrown = false
+
+      try {
+        subjectUnderTest.addTags('', [])
+      } catch (err) {
+        thrown = true
+        err.should.be.an.instanceOf(ValidationError)
+        err.invalidFields.should.be.an('array').with.lengthOf(1)
+        err.invalidFields[0].message.should.match(/must not be an empty string.$/)
+      }
+
+      assert.ok(thrown, 'Expected a ValidationError to be thrown.')
+    })
+
+    it('should throw a proper ValidationError if the account cannot be found', () => {
+      let thrown = false
+
+      try {
+        subjectUnderTest.addTags('account-1', [])
+      } catch (err) {
+        thrown = true
+        err.should.be.an.instanceOf(ValidationError)
+        err.invalidFields.should.be.an('array').with.lengthOf(1)
+        err.invalidFields[0].message.should.match(/not found.$/)
+      }
+
+      assert.ok(thrown, 'Expected a ValidationError to be thrown.')
+    })
+
+    it('should throw a proper ValidationError if tags are invalid', () => {
+      let thrown = false
+
+      subjectUnderTest._accounts = defaultAccountList(1)
+
+      try {
+        subjectUnderTest.addTags('account-1', ['', '123'])
+      } catch (err) {
+        thrown = true
+        err.should.be.an.instanceOf(ValidationError)
+        err.invalidFields.should.be.an('array').with.lengthOf(1)
+        err.invalidFields[0].message.should.match(/must not be an empty string.$/)
+      }
+
+      assert.ok(thrown, 'Expected a ValidationError to be thrown.')
+    })
+
+    it('should not return an event if no tags were added', () => {
+      subjectUnderTest._accounts = defaultAccountList(1)
+
+      assert.deepStrictEqual(subjectUnderTest.addTags('account-1', []), [])
+    })
+
+    it('should return the Account.tagsAdded event if tags were added', () => {
+      const clock = sinon.useFakeTimers({ now: Date.now() })
+
+      subjectUnderTest._accounts = defaultAccountList(1)
+
+      assert.deepStrictEqual(
+        subjectUnderTest.addTags('account-1', ['car', 'repair', 'service']),
+        [{
+          name: 'Account.tagsAdded',
+          time: new Date().toISOString(),
+          payload: {
+            name: 'account-1',
+            tags: ['car', 'repair', 'service']
+          }
+        }]
+      )
+
+      clock.restore()
+    })
+
+    it('should remove duplicate tags', () => {
+      subjectUnderTest._accounts = defaultAccountList(1)
+
+      subjectUnderTest.addTags('account-1', ['car', 'car', 'repair', 'car', 'service'])[0].payload.tags
+        .should.be.an('array')
+        .with.lengthOf(3)
+        .that.has.same.members(['car', 'repair', 'service'])
+    })
+  })
+
+  describe('tagsAdded', () => {
+    it('should should add the tags to the proper account', async () => {
+      const expectedAccount = new AccountImpl(new AccountName('account-1'))
+      const expectedTags = ['car', 'repair', 'service']
+      subjectUnderTest._accounts = [expectedAccount]
+
+      // noinspection JSCheckFunctionSignatures
+      await subjectUnderTest.tagsAdded('account-1', expectedTags)
+
+      const rawTags = expectedAccount.tags.map(tag => tag.getValue())
+
+      assert.deepStrictEqual(rawTags, expectedTags)
     })
   })
 })

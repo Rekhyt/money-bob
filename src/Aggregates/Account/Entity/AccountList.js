@@ -195,13 +195,14 @@ class AccountList extends RootEntity {
     let account
     if (name) {
       account = this._accounts.find(account => account.name.equals(name))
-    }
 
-    if (!account) {
-      validationError.addInvalidField('name', `Account with name "${name}" not found.`)
+      if (!account) {
+        validationError.addInvalidField('name', `Account with name "${name}" not found.`)
+      }
     }
 
     const tags = rawTags.map((tag, index) => {
+      // strip duplicates
       if (rawTags.includes(tag, index + 1)) return
 
       try {
@@ -219,7 +220,7 @@ class AccountList extends RootEntity {
 
   /**
    * @param {string} rawName
-   * @param {string} rawTags
+   * @param {string[]} rawTags
    * @returns {Promise<void>}
    */
   async tagsAdded (rawName, rawTags) {
