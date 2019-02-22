@@ -12,9 +12,9 @@ class AccountList extends ReadModel {
     /** @var {*[]} */
     this._accounts = [...accounts]
 
-    this.registerEvent('Account.accountCreated', async event => this._accountCreated(event.payload))
-    this.registerEvent('Account.accountsLinked', async event => this._accountsLinked(event.payload.subAccountName, event.payload.parentAccountName))
-    this.registerEvent('Account.tagsAdded', async event => this._tagsAdded(event.payload.name, event.payload.tags))
+    this.registerEvent('Account.accountCreated', async event => this.accountCreated(event.payload.name, event.payload.type, event.payload.metadata))
+    this.registerEvent('Account.accountsLinked', async event => this.accountsLinked(event.payload.subAccountName, event.payload.parentAccountName))
+    this.registerEvent('Account.tagsAdded', async event => this.tagsAdded(event.payload.name, event.payload.tags))
   }
 
   /**
@@ -25,14 +25,13 @@ class AccountList extends ReadModel {
   }
 
   /**
-   * @param {string} accountData.name
-   * @param {string} accountData.type
-   * @param {AccountMetadata} accountData.metadata
+   * @param {string} name
+   * @param {string} type
+   * @param {AccountMetadata} metadata
    * @return {Promise<void>}
-   * @private
    */
-  async _accountCreated (accountData) {
-    this._accounts.push({ ...accountData, tags: [] })
+  async accountCreated (name, type, metadata) {
+    this._accounts.push({ name, type, metadata, tags: [] })
   }
 
   /**
@@ -40,14 +39,18 @@ class AccountList extends ReadModel {
    * @param {string} subAccountName
    * @param {string} parentAccountName
    * @returns {Promise<void>}
-   * @private
    */
-  async _accountsLinked (subAccountName, parentAccountName) {
+  async accountsLinked (subAccountName, parentAccountName) {
     const subAccount = this._accounts.find(account => account.name === subAccountName)
     subAccount.parent = parentAccountName
   }
 
-  async _tagsAdded (name, tags) {
+  /**
+   * @param {string} name
+   * @param {string[]} tags
+   * @returns {Promise<void>}
+   */
+  async tagsAdded (name, tags) {
     const account = this._accounts.find(account => account.name === name)
     account.tags.push(...tags.filter(tag => !account.tags.includes(tag)))
   }
