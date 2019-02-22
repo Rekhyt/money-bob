@@ -51,7 +51,7 @@ describe('AccountList', () => {
       subscribe: () => {}
     }
 
-    subjectUnderTest = new AccountList(logger, eventDispatcher, commandDispatcher)
+    subjectUnderTest = new AccountList(logger, commandDispatcher, eventDispatcher)
   })
 
   describe('constructor', () => {
