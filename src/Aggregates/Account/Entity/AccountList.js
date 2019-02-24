@@ -22,7 +22,7 @@ class AccountList extends RootEntity {
   constructor (logger, commandDispatcher, eventDispatcher, accounts = []) {
     super(logger, commandDispatcher, eventDispatcher)
 
-    /** @type Account[] */
+    /** @property {Account[]} */
     this._accounts = [...accounts]
 
     this._accountClasses = {

@@ -30,3 +30,11 @@ declare class AccountMetadataDebit {
 declare class AccountMetadataLiability {
     debitorName: string
 }
+
+declare class AccountReadModel {
+    name: string
+    parent: string
+    type: string
+    metadata: object
+    tags: string[]
+}

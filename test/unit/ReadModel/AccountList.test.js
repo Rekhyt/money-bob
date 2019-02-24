@@ -104,4 +104,66 @@ describe('AccountList', () => {
       })
     })
   })
+
+  describe('accounts', () => {
+    it('should return the list of all previously added accounts', () => {
+      const expectedAccounts = [
+        { name: 'account-1', type: 'paypal', metadata: { email: 'bob@weird-webdesign.com' }, tags: [] },
+        { name: 'account-2', type: 'paypal', metadata: { email: 'jay@weird-webdesign.com' }, tags: [] },
+        { name: 'account-3', type: 'paypal', metadata: { email: 'brodie@weird-webdesign.com' }, tags: [] }
+      ]
+
+      subjectUnderTest._accounts = expectedAccounts
+
+      assert.deepStrictEqual(subjectUnderTest.accounts, expectedAccounts)
+    })
+  })
+
+  describe('accountCreated', () => {
+    it('should add an account to the list of already existing accounts', async () => {
+      const expectedAccounts = [
+        { name: 'account-1', type: 'paypal', metadata: { email: 'bob@weird-webdesign.com' }, tags: [], parent: null },
+        { name: 'account-1', type: 'paypal', metadata: { email: 'jay@weird-webdesign.com' }, tags: [], parent: null },
+        { name: 'account-1', type: 'paypal', metadata: { email: 'brodie@weird-webdesign.com' }, tags: [], parent: null }
+      ]
+
+      subjectUnderTest._accounts = [expectedAccounts[0], expectedAccounts[1]]
+      await subjectUnderTest.accountCreated(
+        expectedAccounts[2].name,
+        expectedAccounts[2].type,
+        expectedAccounts[2].metadata,
+        expectedAccounts[2].parent
+      )
+
+      assert.deepStrictEqual(subjectUnderTest.accounts, expectedAccounts)
+    })
+  })
+
+  describe('accountsLinked', () => {
+    it('should should set the parent account as the sub account\'s parent', async () => {
+      const expectedParent = 'account-2'
+
+      subjectUnderTest._accounts = [
+        { name: 'account-1' },
+        { name: expectedParent }
+      ]
+
+      // noinspection JSCheckFunctionSignatures
+      await subjectUnderTest.accountsLinked('account-1', 'account-2')
+
+      assert.strictEqual(subjectUnderTest._accounts[0].parent, 'account-2')
+    })
+  })
+
+  describe('tagsAdded', () => {
+    it('should should add the tags to the proper account', async () => {
+      const expectedAccount = { name: 'account-1', type: 'paypal', metadata: {}, tags: [], parent: null }
+      const expectedTags = ['car', 'repair', 'service']
+      subjectUnderTest._accounts = [expectedAccount]
+
+      await subjectUnderTest.tagsAdded('account-1', expectedTags)
+
+      assert.deepStrictEqual(expectedAccount.tags, expectedTags)
+    })
+  })
 })

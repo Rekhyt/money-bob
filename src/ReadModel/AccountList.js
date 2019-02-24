@@ -4,12 +4,12 @@ class AccountList extends ReadModel {
   /**
    * @param {Logger} logger
    * @param {EventDispatcher} eventDispatcher
-   * @param {*[]} accounts
+   * @param {AccountReadModel[]} accounts
    */
   constructor (logger, eventDispatcher, accounts = []) {
     super(logger, eventDispatcher)
 
-    /** @var {*[]} */
+    /** @property {AccountReadModel[]} */
     this._accounts = [...accounts]
 
     this.registerEvent('Account.accountCreated', async event => this.accountCreated(event.payload.name, event.payload.type, event.payload.metadata))
@@ -18,7 +18,7 @@ class AccountList extends ReadModel {
   }
 
   /**
-   * @returns {Object[]}
+   * @returns {AccountReadModel[]}
    */
   get accounts () {
     return this._accounts
@@ -31,11 +31,10 @@ class AccountList extends ReadModel {
    * @return {Promise<void>}
    */
   async accountCreated (name, type, metadata) {
-    this._accounts.push({ name, type, metadata, tags: [] })
+    this._accounts.push({ name, type, metadata, tags: [], parent: null })
   }
 
   /**
-   * @param {string} parentAccountName
    * @param {string} subAccountName
    * @param {string} parentAccountName
    * @returns {Promise<void>}
@@ -51,6 +50,7 @@ class AccountList extends ReadModel {
    * @returns {Promise<void>}
    */
   async tagsAdded (name, tags) {
+    /** @var {AccountReadModel} */
     const account = this._accounts.find(account => account.name === name)
     account.tags.push(...tags.filter(tag => !account.tags.includes(tag)))
   }
