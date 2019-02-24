@@ -6,24 +6,11 @@ chai.should()
 const AccountList = require('../../../src/ReadModel/AccountList')
 
 describe('AccountList', () => {
-  let defaultAccountList
   let subjectUnderTest
   let logger
   let eventDispatcher
 
   beforeEach(() => {
-    defaultAccountList = (num) => {
-      const accounts = []
-      let parentName = null
-      for (let i = 1; i <= num; i++) {
-        const parent = { name: `account-${i}`, parent: parentName }
-        parentName = parent.name
-        accounts.push(parent)
-      }
-
-      return accounts
-    }
-
     // noinspection JSUnusedGlobalSymbols
     logger = {
       trace: (...args) => {},
@@ -57,7 +44,7 @@ describe('AccountList', () => {
     })
   })
 
-  describe('command & event handling functions', () => {
+  describe('event handling functions', () => {
     it('should spread the event payloads and pass them to the proper class methods', async () => {
       const events = [
         {
@@ -84,7 +71,7 @@ describe('AccountList', () => {
         }
       ]
 
-      events.forEach(async event => {
+      await Promise.all(events.map(async event => {
         let called = false
         subjectUnderTest[event.name.split('.')[1]] = (...args) => {
           called = true
@@ -101,7 +88,7 @@ describe('AccountList', () => {
         })
 
         assert.ok(called, `Handler for event "${event.name}" was not called.`)
-      })
+      }))
     })
   })
 
@@ -123,8 +110,8 @@ describe('AccountList', () => {
     it('should add an account to the list of already existing accounts', async () => {
       const expectedAccounts = [
         { name: 'account-1', type: 'paypal', metadata: { email: 'bob@weird-webdesign.com' }, tags: [], parent: null },
-        { name: 'account-1', type: 'paypal', metadata: { email: 'jay@weird-webdesign.com' }, tags: [], parent: null },
-        { name: 'account-1', type: 'paypal', metadata: { email: 'brodie@weird-webdesign.com' }, tags: [], parent: null }
+        { name: 'account-2', type: 'paypal', metadata: { email: 'jay@weird-webdesign.com' }, tags: [], parent: null },
+        { name: 'account-3', type: 'paypal', metadata: { email: 'brodie@weird-webdesign.com' }, tags: [], parent: null }
       ]
 
       subjectUnderTest._accounts = [expectedAccounts[0], expectedAccounts[1]]
