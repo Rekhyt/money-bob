@@ -4,19 +4,20 @@ class AccountTree extends ReadModel {
   /**
    * @param {Logger} logger
    * @param {EventDispatcher} eventDispatcher
-   * @param {Object[]} accounts
+   * @param {TreeListAccountReadModel[]} accounts
    */
   constructor (logger, eventDispatcher, accounts = []) {
     super(logger, eventDispatcher)
 
-    /** @var {Object[]} */
+    /** @property {TreeListAccountReadModel[]} */
     this._accountList = [...accounts]
 
-    this._accountTree = []
+    /** @property {TreeAccountReadModel[]} */
+    this._accountTree = [...this._rebuildTree(accounts)]
 
-    this.registerEvent('Account.accountCreated', async event => this._accountCreated(event.payload.name))
-    this.registerEvent('Account.accountsLinked', async event => this._accountsLinked(event.payload.subAccountName, event.payload.parentAccountName))
-    this.registerEvent('Account.tagsAdded', async event => this._tagsAdded(event.payload.name, event.payload.tags))
+    this.registerEvent('Account.accountCreated', async event => this.accountCreated(event.payload.name))
+    this.registerEvent('Account.accountsLinked', async event => this.accountsLinked(event.payload.subAccountName, event.payload.parentAccountName))
+    this.registerEvent('Account.tagsAdded', async event => this.tagsAdded(event.payload.name, event.payload.tags))
   }
 
   /**
@@ -29,9 +30,8 @@ class AccountTree extends ReadModel {
   /**
    * @param {string }accountName
    * @returns {Promise<void>}
-   * @private
    */
-  async _accountCreated (accountName) {
+  async accountCreated (accountName) {
     this._accountList.push({ name: accountName, tags: [], children: [], parent: null })
     this._accountTree.push({ name: accountName, tags: [], children: [] })
   }
@@ -40,9 +40,8 @@ class AccountTree extends ReadModel {
    * @param {string} subAccountName
    * @param {string} parentAccountName
    * @returns {Promise<void>}
-   * @private
    */
-  async _accountsLinked (subAccountName, parentAccountName) {
+  async accountsLinked (subAccountName, parentAccountName) {
     this._accountList.forEach(account => {
       account.children = account.children.filter(subAccount => subAccount !== subAccountName)
     })
@@ -52,7 +51,12 @@ class AccountTree extends ReadModel {
     this._accountTree = this._rebuildTree(this._accountList)
   }
 
-  async _tagsAdded (name, tags) {
+  /**
+   * @param {string} name
+   * @param {string[]} tags
+   * @returns {Promise<void>}
+   */
+  async tagsAdded (name, tags) {
     const account = this._accountList.find(account => account.name === name)
     account.tags.push(...tags.filter(tag => !account.tags.includes(tag)))
 
@@ -71,7 +75,7 @@ class AccountTree extends ReadModel {
       }
 
       const subAccounts = account.children.map(subAccount => {
-        if (typeof subAccount === 'object') return subAccount
+        if (typeof subAccount === 'object') subAccount = subAccount.name
 
         return this._accountList.find(account => account.name === subAccount)
       })

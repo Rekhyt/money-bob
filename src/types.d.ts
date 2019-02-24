@@ -38,3 +38,16 @@ declare class AccountReadModel {
     metadata: object
     tags: string[]
 }
+
+declare class TreeListAccountReadModel {
+    name: string
+    tags: string[]
+    children: string[]
+    parent: string
+}
+
+declare class TreeAccountReadModel {
+    name: string
+    tags: string[]
+    children: TreeAccountReadModel[]
+}
