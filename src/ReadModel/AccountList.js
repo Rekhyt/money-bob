@@ -12,7 +12,7 @@ class AccountList extends ReadModel {
     /** @property {AccountReadModel[]} */
     this._accounts = [...accounts]
 
-    this.registerEvent('Account.accountCreated', async event => this.accountCreated(event.payload.name, event.payload.type, event.payload.metadata))
+    this.registerEvent('Account.accountCreated', async event => this.accountCreated(event.payload.name, event.payload.type, event.payload.currency, event.payload.metadata))
     this.registerEvent('Account.accountsLinked', async event => this.accountsLinked(event.payload.subAccountName, event.payload.parentAccountName))
     this.registerEvent('Account.tagsAdded', async event => this.tagsAdded(event.payload.name, event.payload.tags))
   }
@@ -27,11 +27,12 @@ class AccountList extends ReadModel {
   /**
    * @param {string} name
    * @param {string} type
+   * @param {string} currency
    * @param {AccountMetadata} metadata
    * @return {Promise<void>}
    */
-  async accountCreated (name, type, metadata) {
-    this._accounts.push({ name, type, metadata, tags: [], parent: null })
+  async accountCreated (name, type, currency, metadata) {
+    this._accounts.push({ name, type, currency, metadata, tags: [], parent: null })
   }
 
   /**

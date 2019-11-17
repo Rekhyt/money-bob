@@ -1,4 +1,6 @@
 const { ValidationError } = require('ddd-js')
+const Amount = require('../../../ValueObject/Amount')
+const Money = require('../../../ValueObject/Money')
 
 /**
  * @abstract
@@ -7,12 +9,14 @@ class Account {
   /**
    * @param {AccountName} name
    * @param {Account?} parent
+   * @param {Currency} currency
    * @param {Tag[]?} tags
    */
-  constructor (name, parent = null, tags = []) {
+  constructor (name, currency, parent = null, tags = []) {
     this._name = name
     this._parent = parent
     this._tags = tags
+    this._balance = new Money(new Amount(0), currency)
   }
 
   /**
@@ -34,6 +38,13 @@ class Account {
    */
   get tags () {
     return this._tags
+  }
+
+  /**
+   * @returns {Money}
+   */
+  get balance () {
+    return this._balance
   }
 
   /**

@@ -6,12 +6,13 @@ const Institute = require('../ValueObject/Metadata/Institute')
 class BankAccount extends Account {
   /**
    * @param {AccountName} name
+   * @param {Currency} currency
    * @param {Institute} institute
    * @param {Iban} iban
    * @param {Bic} bic
    */
-  constructor (name, institute, iban, bic) {
-    super(name)
+  constructor (name, currency, institute, iban, bic) {
+    super(name, currency)
 
     this._institute = institute
     this._iban = iban
@@ -41,14 +42,16 @@ class BankAccount extends Account {
 
   /**
    * @param {AccountName} name
+   * @param {Currency} currency
    * @param {AccountMetadataBankAccount} rawTypeMetadata
    * @returns {BankAccount}
    */
-  static tryCreate (name, rawTypeMetadata) {
+  static tryCreate (name, currency, rawTypeMetadata) {
     super.validateMetadataFieldsExisting(['institute', 'iban', 'bic'], rawTypeMetadata)
 
     return new BankAccount(
       name,
+      currency,
       new Institute(rawTypeMetadata.institute),
       new Iban(rawTypeMetadata.iban),
       new Bic(rawTypeMetadata.bic)

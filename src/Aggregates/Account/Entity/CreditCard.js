@@ -7,13 +7,14 @@ const Institute = require('../ValueObject/Metadata/Institute')
 class CreditCard extends Account {
   /**
    * @param {AccountName} name
+   * @param {Currency} currency
    * @param {Institute} institute
    * @param {CreditCardType} type
    * @param {CreditCardHolder} holder
    * @param {CreditCardNumber} number
    */
-  constructor (name, institute, type, holder, number) {
-    super(name)
+  constructor (name, currency, institute, type, holder, number) {
+    super(name, currency)
 
     this._institute = institute
     this._type = type
@@ -51,14 +52,16 @@ class CreditCard extends Account {
 
   /**
    * @param {AccountName} name
+   * @param {Currency} currency
    * @param {AccountMetadataCreditCard} rawTypeMetadata
    * @returns {CreditCard}
    */
-  static tryCreate (name, rawTypeMetadata) {
+  static tryCreate (name, currency, rawTypeMetadata) {
     super.validateMetadataFieldsExisting(['institute', 'type', 'holder', 'number'], rawTypeMetadata)
 
     return new CreditCard(
       name,
+      currency,
       new Institute(rawTypeMetadata.institute),
       new CreditCardType(rawTypeMetadata.type),
       new CreditCardHolder(rawTypeMetadata.holder),

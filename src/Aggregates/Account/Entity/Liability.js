@@ -4,10 +4,11 @@ const DebitorName = require('../ValueObject/Metadata/DebitorName')
 class Liability extends Account {
   /**
    * @param {AccountName} name
+   * @param {Currency} currency
    * @param {DebitorName} debitorName
    */
-  constructor (name, debitorName) {
-    super(name)
+  constructor (name, currency, debitorName) {
+    super(name, currency)
 
     this._debitorName = debitorName
   }
@@ -21,13 +22,14 @@ class Liability extends Account {
 
   /**
    * @param {AccountName} name
+   * @param {Currency} currency
    * @param {AccountMetadataLiability} rawTypeMetadata
    * @returns {Liability}
    */
-  static tryCreate (name, rawTypeMetadata) {
+  static tryCreate (name, currency, rawTypeMetadata) {
     super.validateMetadataFieldsExisting(['debitorName'], rawTypeMetadata)
 
-    return new Liability(name, new DebitorName(rawTypeMetadata.debitorName))
+    return new Liability(name, currency, new DebitorName(rawTypeMetadata.debitorName))
   }
 }
 

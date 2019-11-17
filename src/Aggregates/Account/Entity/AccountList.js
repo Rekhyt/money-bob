@@ -7,6 +7,9 @@ const Paypal = require('./Paypal')
 const Debit = require('./Debit')
 const Liability = require('./Liability')
 const Tag = require('../ValueObject/Tag')
+const Amount = require('../../../ValueObject/Amount')
+const Currency = require('../../../ValueObject/Currency')
+const Money = require('../../../ValueObject/Money')
 
 // value objects
 const AccountName = require('../ValueObject/AccountName')
@@ -33,23 +36,26 @@ class AccountList extends RootEntity {
       liability: Liability
     }
 
-    this.registerCommand('Account.createAccount', command => this.createAccount(command.payload.name, command.payload.type, command.payload.metadata))
+    this.registerCommand('Account.createAccount', command => this.createAccount(command.payload.name, command.payload.type, command.payload.currency, command.payload.metadata))
     this.registerCommand('Account.linkAccounts', command => this.linkAccounts(command.payload.subAccountName, command.payload.parentAccountName))
     this.registerCommand('Account.addTags', command => this.addTags(command.payload.name, command.payload.tags))
+    this.registerCommand('Account.bookTransaction', command => this.bookTransaction(command.payload.account1, command.payload.account2, command.payload.amount, command.payload.currency))
 
-    this.registerEvent('Account.accountCreated', event => this.accountCreated(event.payload.name, event.payload.type, event.payload.metadata))
+    this.registerEvent('Account.accountCreated', event => this.accountCreated(event.payload.name, event.payload.type, event.payload.currency, event.payload.metadata))
     this.registerEvent('Account.accountsLinked', event => this.accountsLinked(event.payload.subAccountName, event.payload.parentAccountName))
     this.registerEvent('Account.tagsAdded', event => this.tagsAdded(event.payload.name, event.payload.tags))
+    this.registerEvent('Account.transactionBooked', event => this.transactionBooked(event.payload.account1, event.payload.account2, event.payload.amount, event.payload.currency))
   }
 
   /**
    * @param {string} rawName
    * @param {string} rawType
+   * @param {string} rawCurrency
    * @param {AccountMetadata} rawMetadata
    * @returns {Event[]}
    */
-  createAccount (rawName, rawType, rawMetadata) {
-    let name, type
+  createAccount (rawName, rawType, rawCurrency, rawMetadata) {
+    let name, currency, type
     const validationError = new ValidationError()
 
     try {
@@ -62,6 +68,12 @@ class AccountList extends RootEntity {
       type = new AccountType(rawType)
     } catch (err) {
       validationError.addInvalidField('type', err.message)
+    }
+
+    try {
+      currency = new Currency(rawCurrency)
+    } catch (err) {
+      validationError.addInvalidField('currency', err.message)
     }
 
     if (name && this._accounts.find(account => account.name.equals(name))) {
@@ -78,7 +90,7 @@ class AccountList extends RootEntity {
 
     if (type && rawMetadata[type] && typeof rawMetadata[type] === 'object' && !Array.isArray(rawMetadata[type])) {
       try {
-        this._accountClasses[type].tryCreate(name, rawMetadata[type])
+        this._accountClasses[type].tryCreate(name, currency, rawMetadata[type])
       } catch (err) {
         validationError.addInvalidField('metadata', err.message)
       }
@@ -86,16 +98,22 @@ class AccountList extends RootEntity {
 
     if (validationError.hasErrors()) throw validationError
 
-    return [this.createEvent('Account.accountCreated', { name: name.getValue(), type: type.getValue(), metadata: rawMetadata })]
+    return [this.createEvent('Account.accountCreated', {
+      name: name.getValue(),
+      type: type.getValue(),
+      currency: currency.getValue(),
+      metadata: rawMetadata
+    })]
   }
 
   /**
    * @param {string} rawName
    * @param {string} rawType
+   * @param {string} rawCurrency
    * @param {AccountMetadata} rawMetadata
    */
-  async accountCreated (rawName, rawType, rawMetadata) {
-    this._accounts.push(this._accountClasses[rawType].tryCreate(new AccountName(rawName), rawMetadata[rawType]))
+  async accountCreated (rawName, rawType, rawCurrency, rawMetadata) {
+    this._accounts.push(this._accountClasses[rawType].tryCreate(new AccountName(rawName), new Currency(rawCurrency), rawMetadata[rawType]))
   }
 
   /**
