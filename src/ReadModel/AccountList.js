@@ -1,4 +1,5 @@
 const { ReadModel } = require('ddd-js')
+const Dinero = require('dinero.js')
 
 class AccountList extends ReadModel {
   /**
@@ -15,6 +16,8 @@ class AccountList extends ReadModel {
     this.registerEvent('Account.accountCreated', async event => this.accountCreated(event.payload.name, event.payload.type, event.payload.currency, event.payload.metadata))
     this.registerEvent('Account.accountsLinked', async event => this.accountsLinked(event.payload.subAccountName, event.payload.parentAccountName))
     this.registerEvent('Account.tagsAdded', async event => this.tagsAdded(event.payload.name, event.payload.tags))
+    this.registerEvent('Account.moneyAdded', async event => this.moneyAdded(event.payload.account, event.payload.amount, event.payload.currency))
+    this.registerEvent('Account.moneyWithdrawn', async event => this.moneyWithdrawn(event.payload.account, event.payload.amount, event.payload.currency))
   }
 
   /**
@@ -32,7 +35,7 @@ class AccountList extends ReadModel {
    * @return {Promise<void>}
    */
   async accountCreated (name, type, currency, metadata) {
-    this._accounts.push({ name, type, currency, metadata, tags: [], parent: null })
+    this._accounts.push({ name, type, balance: 0, currency, metadata, tags: [], parent: null })
   }
 
   /**
@@ -54,6 +57,30 @@ class AccountList extends ReadModel {
     /** @var {AccountReadModel} */
     const account = this._accounts.find(account => account.name === name)
     account.tags.push(...tags.filter(tag => !account.tags.includes(tag)))
+  }
+
+  /**
+   * @param {string} name
+   * @param {number} amount
+   * @param {string} currency
+   * @returns {Promise<void>}
+   */
+  async moneyAdded (name, amount, currency) {
+    const account = this._accounts.find(account => account.name === name)
+    account.balance = new Dinero({ amount: account.balance, currency: account.currency })
+      .add(new Dinero({ amount, currency })).getAmount()
+  }
+
+  /**
+   * @param {string} name
+   * @param {number} amount
+   * @param {string} currency
+   * @returns {Promise<void>}
+   */
+  async moneyWithdrawn (name, amount, currency) {
+    const account = this._accounts.find(account => account.name === name)
+    account.balance = new Dinero({ amount: account.balance, currency: account.currency })
+      .subtract(new Dinero({ amount, currency })).getAmount()
   }
 }
 

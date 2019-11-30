@@ -36,15 +36,16 @@ class AccountList extends RootEntity {
       liability: Liability
     }
 
-    this.registerCommand('Account.createAccount', command => this.createAccount(command.payload.name, command.payload.type, command.payload.currency, command.payload.metadata))
-    this.registerCommand('Account.linkAccounts', command => this.linkAccounts(command.payload.subAccountName, command.payload.parentAccountName))
-    this.registerCommand('Account.addTags', command => this.addTags(command.payload.name, command.payload.tags))
-    this.registerCommand('Account.bookTransaction', command => this.bookTransaction(command.payload.account1, command.payload.account2, command.payload.amount, command.payload.currency))
+    this.registerCommand('Account.createAccount', async command => this.createAccount(command.payload.name, command.payload.type, command.payload.currency, command.payload.metadata))
+    this.registerCommand('Account.linkAccounts', async command => this.linkAccounts(command.payload.subAccountName, command.payload.parentAccountName))
+    this.registerCommand('Account.addTags', async command => this.addTags(command.payload.name, command.payload.tags))
+    this.registerCommand('Account.bookTransaction', async command => this.bookTransaction(command.payload.account1, command.payload.account2, command.payload.amount, command.payload.currency))
 
-    this.registerEvent('Account.accountCreated', event => this.accountCreated(event.payload.name, event.payload.type, event.payload.currency, event.payload.metadata))
-    this.registerEvent('Account.accountsLinked', event => this.accountsLinked(event.payload.subAccountName, event.payload.parentAccountName))
-    this.registerEvent('Account.tagsAdded', event => this.tagsAdded(event.payload.name, event.payload.tags))
-    this.registerEvent('Account.transactionBooked', event => this.transactionBooked(event.payload.account1, event.payload.account2, event.payload.amount, event.payload.currency))
+    this.registerEvent('Account.accountCreated', async event => this.accountCreated(event.payload.name, event.payload.type, event.payload.currency, event.payload.metadata))
+    this.registerEvent('Account.accountsLinked', async event => this.accountsLinked(event.payload.subAccountName, event.payload.parentAccountName))
+    this.registerEvent('Account.tagsAdded', async event => this.tagsAdded(event.payload.name, event.payload.tags))
+    this.registerEvent('Account.moneyAdded', async event => this.moneyAdded(event.payload.account, event.payload.amount, event.payload.currency))
+    this.registerEvent('Account.moneyWithdrawn', async event => this.moneyWithdrawn(event.payload.account, event.payload.amount, event.payload.currency))
   }
 
   /**
@@ -52,9 +53,9 @@ class AccountList extends RootEntity {
    * @param {string} rawType
    * @param {string} rawCurrency
    * @param {AccountMetadata} rawMetadata
-   * @returns {Event[]}
+   * @returns {Promise<Event[]>}
    */
-  createAccount (rawName, rawType, rawCurrency, rawMetadata) {
+  async createAccount (rawName, rawType, rawCurrency, rawMetadata) {
     let name, currency, type
     const validationError = new ValidationError()
 
@@ -119,9 +120,9 @@ class AccountList extends RootEntity {
   /**
    * @param {string} rawSubAccountName
    * @param {string} rawParentAccountName
-   * @returns {Event[]}
+   * @returns {Promise<Event[]>}
    */
-  linkAccounts (rawSubAccountName, rawParentAccountName) {
+  async linkAccounts (rawSubAccountName, rawParentAccountName) {
     const validationError = new ValidationError()
 
     let subAccountName, parentAccountName
@@ -149,6 +150,11 @@ class AccountList extends RootEntity {
       if (!parentAccount) {
         validationError.addInvalidField('parentAccountName', `Parent account with name "${parentAccountName}" not found.`)
       }
+    }
+
+    const currentParent = subAccount.parent
+    if (!validationError.hasErrors() && currentParent) {
+      validationError.addInvalidField('subAccountName', `Cannot link account ${subAccountName} that is already linked to ${currentParent}. Try moving the account instead.`)
     }
 
     if (!validationError.hasErrors() && parentAccount.equals(subAccount)) {
@@ -194,14 +200,19 @@ class AccountList extends RootEntity {
    * @returns {Promise<void>}
    */
   async accountsLinked (rawSubAccountName, rawParentAccountName) {
-    this._accounts.find(account => account.name.getValue() === rawSubAccountName).linkAccount(new AccountName(rawParentAccountName))
+    const subAccount = this._accounts.find(account => account.name.getValue() === rawSubAccountName)
+    const parentAccount = this._accounts.find(account => account.name.getValue() === rawParentAccountName)
+
+    subAccount.setParent(parentAccount)
+    parentAccount.addChild(subAccount)
   }
 
   /**
    * @param {string} rawName
    * @param {string[]} rawTags
+   * @returns {Promise<Event[]>}
    */
-  addTags (rawName, rawTags) {
+  async addTags (rawName, rawTags) {
     const validationError = new ValidationError()
     let name
     try {
@@ -243,6 +254,128 @@ class AccountList extends RootEntity {
    */
   async tagsAdded (rawName, rawTags) {
     this._accounts.find(account => account.name.getValue() === rawName).addTags(rawTags.map(tag => new Tag(tag)))
+  }
+
+  /**
+   * @param {string} rawAccount1
+   * @param {string} rawAccount2
+   * @param {number} rawAmount
+   * @param {string} rawCurrency
+   * @returns {Promise<Event[]>}
+   */
+  async bookTransaction (rawAccount1, rawAccount2, rawAmount, rawCurrency) {
+    const validationError = new ValidationError()
+
+    let name1
+    try {
+      name1 = new AccountName(rawAccount1)
+    } catch (err) {
+      validationError.addInvalidField('account1', err.message)
+    }
+
+    let account1
+    if (name1) {
+      account1 = this._accounts.find(account => account.name.equals(name1))
+      if (!account1) {
+        validationError.addInvalidField('account1', `Account 1 with name "${name1}" not found.`)
+      }
+    }
+
+    let name2
+    try {
+      name2 = new AccountName(rawAccount2)
+    } catch (err) {
+      validationError.addInvalidField('account2', err.message)
+    }
+
+    let account2
+    if (name2) {
+      account2 = this._accounts.find(account => account.name.equals(name2))
+      if (!account2) {
+        validationError.addInvalidField('account2', `Account 2 with name "${name2}" not found.`)
+      }
+    }
+
+    if (account1 && account2) {
+      if (account1.children.length) validationError.addInvalidField('account1', `Cannot book transaction from account ${account1.name} that is a parent of other accounts: ${account1.children.map(c => c.getValue())}.`)
+      if (account2.children.length) validationError.addInvalidField('account2', `Cannot book transaction to account ${account2.name} that is a parent of other accounts: ${account2.children.map(c => c.getValue())}.`)
+    }
+
+    let amount
+    try {
+      amount = new Amount(rawAmount)
+    } catch (err) {
+      validationError.addInvalidField('amount', err.message)
+    }
+
+    let currency
+    try {
+      currency = new Currency(rawCurrency)
+    } catch (err) {
+      validationError.addInvalidField('currency', err.message)
+    }
+
+    let money
+    try {
+      if (account1 && account2 && amount && currency) {
+        money = new Money(amount, currency)
+
+        if (!money.currency.equals(account1.balance.currency)) {
+          validationError.addInvalidField(
+            'currency',
+            `Passed currency ${currency} does not match account 1 currency ${account1.balance.currency}.`
+          )
+        }
+
+        if (!money.currency.equals(account2.balance.currency)) {
+          validationError.addInvalidField(
+            'currency',
+            `Passed currency ${currency} does not match account 2 currency ${account2.balance.currency}.`
+          )
+        }
+      }
+    } catch (err) {
+      validationError.addInvalidField('amount', err.message)
+    }
+
+    if (validationError.hasErrors()) throw validationError
+
+    return [
+      this.createEvent('Account.moneyWithdrawn', {
+        account: account1.name.getValue(),
+        amount: money.getAmount().getValue(),
+        currency: money.getCurrency().getValue()
+      }),
+      this.createEvent('Account.moneyAdded', {
+        account: account2.name.getValue(),
+        amount: money.getAmount().getValue(),
+        currency: money.getCurrency().getValue()
+      })
+    ]
+  }
+
+  /**
+   * @param {string} rawAccount
+   * @param {number} rawAmount
+   * @param {string} rawCurrency
+   * @returns {Promise<void>}
+   */
+  async moneyAdded (rawAccount, rawAmount, rawCurrency) {
+    this._accounts
+      .find(account => account.name.getValue() === rawAccount).balance
+      .add(new Money(new Amount(rawAmount), new Currency(rawCurrency)))
+  }
+
+  /**
+   * @param {string} rawAccount
+   * @param {number} rawAmount
+   * @param {string} rawCurrency
+   * @returns {Promise<void>}
+   */
+  async moneyWithdrawn (rawAccount, rawAmount, rawCurrency) {
+    this._accounts
+      .find(account => account.name.getValue() === rawAccount).balance
+      .subtract(new Money(new Amount(rawAmount), new Currency(rawCurrency)))
   }
 
   /**

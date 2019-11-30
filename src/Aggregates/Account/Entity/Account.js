@@ -8,14 +8,18 @@ const Money = require('../../../ValueObject/Money')
 class Account {
   /**
    * @param {AccountName} name
-   * @param {Account?} parent
    * @param {Currency} currency
+   * @param {Account?} parent
+   * @param {Account[]?} children
    * @param {Tag[]?} tags
    */
-  constructor (name, currency, parent = null, tags = []) {
+  constructor (name, currency, parent = null, children = [], tags = []) {
     this._name = name
     this._parent = parent
+    this._children = children
     this._tags = tags
+
+    /** @var {Money} */
     this._balance = new Money(new Amount(0), currency)
   }
 
@@ -34,6 +38,13 @@ class Account {
   }
 
   /**
+   * @returns {Account[]}
+   */
+  get children () {
+    return this._children
+  }
+
+  /**
    * @returns {Tag[]}
    */
   get tags () {
@@ -48,6 +59,13 @@ class Account {
   }
 
   /**
+   * @param {Money} balance
+   */
+  set balance (balance) {
+    this._balance = balance
+  }
+
+  /**
    * @param {Account} account
    * @returns {boolean}
    */
@@ -56,10 +74,17 @@ class Account {
   }
 
   /**
-   * @param {AccountName} parentAccountName
+   * @param {Account} parentAccount
    */
-  linkAccount (parentAccountName) {
-    this._parent = parentAccountName
+  setParent (parentAccount) {
+    this._parent = parentAccount
+  }
+
+  /**
+   * @param {Account} subAccount
+   */
+  addChild (subAccount) {
+    this._children.push(subAccount)
   }
 
   /**

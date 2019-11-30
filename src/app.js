@@ -4,17 +4,19 @@ const path = require('path')
 
 const {
   CommandDispatcherLocal,
-  EventDispatcherLocal,
+  // EventDispatcherLocal,
   EventDispatcherEventEmitter,
   EventRepositoryJsonFile,
   InvalidArgumentError,
   InvalidTypeError,
+  SagaError,
   ValidationError
 } = require('ddd-js')
 
 const logger = require('./util/getBunyanLogger')('money-bob')
 const EntityFactory = require('./Aggregates/EntityFactory')
 const ReadModelFactory = require('./ReadModelFactory')
+const SagaFactory = require('./SagaFactory')
 
 const eventRepository = new EventRepositoryJsonFile(path.join(__dirname, '..', 'datasources', 'events.json'))
 const eventDispatcher = new EventDispatcherEventEmitter(logger, eventRepository)

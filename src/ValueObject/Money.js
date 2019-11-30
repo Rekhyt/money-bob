@@ -42,7 +42,7 @@ class Money {
    */
   add (amount) {
     this.dinero = this.dinero.add(amount.dinero)
-    this.amount = this.dinero.getAmount()
+    this.amount = new Amount(this.dinero.getAmount())
   }
 
   /**
@@ -50,7 +50,7 @@ class Money {
    */
   subtract (amount) {
     this.dinero = this.dinero.subtract(amount.dinero)
-    this.amount = this.dinero.getAmount()
+    this.amount = new Amount(this.dinero.getAmount())
   }
 
   /**
