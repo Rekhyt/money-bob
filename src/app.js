@@ -25,13 +25,18 @@ const commandDispatcher = new CommandDispatcherLocal(eventDispatcher, logger)
 
 const entityFactory = new EntityFactory(logger, commandDispatcher, eventDispatcher)
 const readModelFactory = new ReadModelFactory(logger, eventDispatcher)
+const sagaFactory = new SagaFactory(logger, commandDispatcher)
 
-const accountList = entityFactory.createAccountList()
+entityFactory.createAccountList()
 const accountListReadModel = readModelFactory.createAccountList()
 const accountTreeReadModel = readModelFactory.createAccountTree()
 
+entityFactory.createTransactionList()
+
+sagaFactory.createBookTransaction()
+
 const app = express()
-app.use(bodyParser.json('application/json'))
+app.use(bodyParser.json())
 
 eventDispatcher.replayAll().then(() => {
   app.post('/command', async (req, res) => {
@@ -52,6 +57,19 @@ eventDispatcher.replayAll().then(() => {
       if (err instanceof ValidationError) {
         logSubject = { message: err.message, invalidFields: err.invalidFields }
         errorResponse.invalidFields = err.invalidFields
+      }
+
+      if (err instanceof SagaError) {
+        const errors = err.errors.map(e => {
+          const baseError = { entity: e.entityName, message: e.error.message }
+
+          if (e.error instanceof ValidationError) return { ...baseError, invalidFields: e.error.invalidFields }
+
+          return baseError
+        })
+
+        logSubject = { message: err.message, errors }
+        errorResponse.validationErrors = errors
       }
 
       logger.error(logSubject)
