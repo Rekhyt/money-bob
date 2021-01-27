@@ -2,16 +2,9 @@ const { ReadModel } = require('ddd-js')
 const Dinero = require('dinero.js')
 
 class AccountList extends ReadModel {
-  /**
-   * @param {Logger} logger
-   * @param {EventDispatcher} eventDispatcher
-   * @param {AccountReadModel[]} accounts
-   */
-  constructor (logger, eventDispatcher, accounts = []) {
-    super(logger, eventDispatcher)
-
+  setup () {
     /** @property {AccountReadModel[]} */
-    this._accounts = [...accounts]
+    this._accounts = []
 
     this.registerEvent('Account.accountCreated', async event => this.accountCreated(event.payload.name, event.payload.type, event.payload.currency, event.payload.metadata))
     this.registerEvent('Account.accountsLinked', async event => this.accountsLinked(event.payload.subAccountName, event.payload.parentAccountName))

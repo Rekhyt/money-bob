@@ -3,7 +3,7 @@ const { ValidationError } = require('ddd-js')
 const Currency = require('../../../../../src/ValueObject/Currency')
 const Account = require('../../../../../src/Aggregates/Account/Entity/Account')
 const AccountName = require('../../../../../src/Aggregates/Account/ValueObject/AccountName')
-const Tag = require('../../../../../src/Aggregates/Account/ValueObject/Tag')
+const Tag = require('../../../../../src/ValueObject/Tag')
 
 const AccountImpl = class extends Account {}
 

@@ -29,6 +29,7 @@ describe('ReadModel.AccountTree', () => {
       }
     }
     subjectUnderTest = new AccountTree(logger, eventDispatcher)
+    subjectUnderTest.setup()
   })
 
   describe('constructor', () => {
@@ -41,8 +42,9 @@ describe('ReadModel.AccountTree', () => {
         subscribeCallCount++
       }
 
-      const accountList = new AccountTree(logger, eventDispatcher)
-      accountList.should.be.an.instanceOf(AccountTree)
+      const accountTree = new AccountTree(logger, eventDispatcher)
+      accountTree.should.be.an.instanceOf(AccountTree)
+      accountTree.setup()
 
       assert.strictEqual(subscribeCallCount, expectedEvents.length)
     })
@@ -162,7 +164,9 @@ describe('ReadModel.AccountTree', () => {
         }
       ]
 
-      subjectUnderTest = new AccountTree(logger, eventDispatcher, [
+      subjectUnderTest = new AccountTree(logger, eventDispatcher)
+      subjectUnderTest.setup()
+      subjectUnderTest._accountList = [
         JSON.parse(JSON.stringify(expectedAccounts[0].children[1].children[0])),
         JSON.parse(JSON.stringify(expectedAccounts[0].children[0].children[3])),
         JSON.parse(JSON.stringify(expectedAccounts[0].children[0].children[1])),
@@ -176,7 +180,8 @@ describe('ReadModel.AccountTree', () => {
         account.children = []
         account.parent = null
         return account
-      }))
+      })
+      subjectUnderTest._rebuildTree(subjectUnderTest._accountTree)
 
       await Promise.all([
         subjectUnderTest.accountsLinked('car', 'mobility'),
@@ -225,7 +230,9 @@ describe('ReadModel.AccountTree', () => {
         }
       ]
 
-      subjectUnderTest = new AccountTree(logger, eventDispatcher, [
+      subjectUnderTest = new AccountTree(logger, eventDispatcher)
+      subjectUnderTest.setup()
+      subjectUnderTest._accountList = [
         JSON.parse(JSON.stringify(expectedAccounts[0].children[1].children[0])),
         JSON.parse(JSON.stringify(expectedAccounts[0].children[0].children[3])),
         JSON.parse(JSON.stringify(expectedAccounts[0].children[0].children[1])),
@@ -235,7 +242,8 @@ describe('ReadModel.AccountTree', () => {
         JSON.parse(JSON.stringify(expectedAccounts[0].children[0])),
         JSON.parse(JSON.stringify(expectedAccounts[0].children[1])),
         JSON.parse(JSON.stringify(expectedAccounts[0]))
-      ])
+      ]
+      subjectUnderTest._rebuildTree(subjectUnderTest._accountList)
 
       expectedAccounts[0].children[1].children[0].tags.push('other')
 

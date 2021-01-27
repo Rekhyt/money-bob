@@ -1,19 +1,12 @@
 const { ReadModel } = require('ddd-js')
 
 class AccountTree extends ReadModel {
-  /**
-   * @param {Logger} logger
-   * @param {EventDispatcher} eventDispatcher
-   * @param {TreeListAccountReadModel[]} accounts
-   */
-  constructor (logger, eventDispatcher, accounts = []) {
-    super(logger, eventDispatcher)
-
+  setup () {
     /** @property {TreeListAccountReadModel[]} */
-    this._accountList = [...accounts]
+    this._accountList = []
 
     /** @property {TreeAccountReadModel[]} */
-    this._accountTree = [...this._rebuildTree(accounts)]
+    this._accountTree = []
 
     this.registerEvent('Account.accountCreated', async event => this.accountCreated(event.payload.name))
     this.registerEvent('Account.accountsLinked', async event => this.accountsLinked(event.payload.subAccountName, event.payload.parentAccountName))

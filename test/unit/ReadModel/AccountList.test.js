@@ -25,6 +25,7 @@ describe('ReadModel.AccountList', () => {
       subscribe: () => {}
     }
     subjectUnderTest = new AccountList(logger, eventDispatcher)
+    subjectUnderTest.setup()
   })
 
   describe('constructor', () => {
@@ -42,6 +43,7 @@ describe('ReadModel.AccountList', () => {
 
       const accountList = new AccountList(logger, eventDispatcher)
       accountList.should.be.an.instanceOf(AccountList)
+      accountList.setup()
 
       assert.strictEqual(subscribeCallCount, expectedEvents.length)
     })

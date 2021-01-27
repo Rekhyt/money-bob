@@ -104,7 +104,7 @@ class Account extends BaseEntity {
    * @throws ValidationError if a required metadata field is missing
    */
   static validateMetadataFieldsExisting (requiredFields, metadata) {
-    const missingFields = requiredFields.filter(key => !metadata.hasOwnProperty(key))
+    const missingFields = requiredFields.filter(key => !Object.prototype.hasOwnProperty.call(metadata, key))
 
     if (missingFields.length === 0) return
 
