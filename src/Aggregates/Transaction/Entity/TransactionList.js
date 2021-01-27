@@ -9,6 +9,7 @@ const Currency = require('../../../ValueObject/Currency')
 const Money = require('../../../ValueObject/Money')
 const Subject = require('../ValueObject/Subject')
 const TransactionTime = require('../ValueObject/TransactionTime')
+const Tag = require('../../../ValueObject/Tag')
 
 class TransactionList extends RootEntity {
   setup () {
@@ -21,7 +22,8 @@ class TransactionList extends RootEntity {
       command.payload.currency,
       command.payload.subject,
       command.payload.notes,
-      command.payload.transactionTime
+      command.payload.transactionTime,
+      command.payload.tags
     ))
 
     this.registerEvent('Transaction.transactionBooked', async event => this.transactionBooked(
@@ -31,7 +33,8 @@ class TransactionList extends RootEntity {
       event.payload.currency,
       event.payload.subject,
       event.payload.notes,
-      event.payload.transactionTime
+      event.payload.transactionTime,
+      event.payload.tags
     ))
   }
 
@@ -43,8 +46,9 @@ class TransactionList extends RootEntity {
    * @param {string} rawSubject
    * @param {string} rawNotes
    * @param {string} rawTransactionTime
+   * @param {string[]} rawTags
    */
-  bookTransaction (rawAccount1, rawAccount2, rawAmount, rawCurrency, rawSubject, rawNotes, rawTransactionTime) {
+  bookTransaction (rawAccount1, rawAccount2, rawAmount, rawCurrency, rawSubject, rawNotes, rawTransactionTime, rawTags = []) {
     const validationError = new ValidationError()
 
     let account1
@@ -101,11 +105,20 @@ class TransactionList extends RootEntity {
       validationError.addInvalidField('transactionTime', err.message)
     }
 
+    const tags = rawTags.map((t, i) => {
+      try {
+        return new Tag(t)
+      } catch (err) {
+        validationError.addInvalidField(`tags[${i}]`, err.message)
+        return null
+      }
+    }).filter(t => t)
+
     if (validationError.hasErrors()) throw validationError
 
     let transaction
     try {
-      transaction = new Transaction(account1, account2, money, subject, notes, transactionTime)
+      transaction = new Transaction(account1, account2, money, subject, notes, transactionTime, tags)
     } catch (err) {
       throw new Error('Unknown error creating transaction.')
     }
@@ -117,7 +130,8 @@ class TransactionList extends RootEntity {
       currency: transaction.amount.getCurrency().getValue(),
       subject: transaction.subject.getValue(),
       notes: transaction.notes.getValue(),
-      transactionTime: transaction.transactionTime.getValue()
+      transactionTime: transaction.transactionTime.getValue(),
+      tags: transaction.tags.map(t => t.getValue())
     })]
   }
 
@@ -129,15 +143,17 @@ class TransactionList extends RootEntity {
    * @param {string} rawSubject
    * @param {string} rawNotes
    * @param {string} rawTransactionTime
+   * @param {string[]} rawTags
    */
-  async transactionBooked (rawAccount1, rawAccount2, rawAmount, rawCurrency, rawSubject, rawNotes, rawTransactionTime) {
+  async transactionBooked (rawAccount1, rawAccount2, rawAmount, rawCurrency, rawSubject, rawNotes, rawTransactionTime, rawTags = []) {
     this._transactions.push(new Transaction(
       new AccountName(rawAccount1),
       new AccountName(rawAccount2),
       new Money(new Amount(rawAmount), new Currency(rawCurrency)),
       new Subject(rawSubject),
       new Notes(rawNotes),
-      new TransactionTime(rawTransactionTime)
+      new TransactionTime(rawTransactionTime),
+      rawTags.map(t => new Tag(t))
     ))
   }
 }

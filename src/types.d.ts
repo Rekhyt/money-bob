@@ -51,3 +51,14 @@ declare class TreeAccountReadModel {
     tags: string[]
     children: TreeAccountReadModel[]
 }
+
+declare class TransactionReadModel {
+    account1: string
+    account2: string
+    amount: number
+    currency: string
+    subject: string
+    notes: string
+    transactionTime: string
+    tags: string[]
+}

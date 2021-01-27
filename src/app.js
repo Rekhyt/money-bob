@@ -6,6 +6,7 @@ const TransactionList = require('./Aggregates/Transaction/Entity/TransactionList
 const BookTransaction = require('./Saga/BookTransaction')
 const AccountListReadModel = require('./ReadModel/AccountList')
 const AccountTreeReadModel = require('./ReadModel/AccountTree')
+const TransactionListReadModel = require('./ReadModel/TransactionList')
 
 const logger = require('./util/getBunyanLogger')('money-bob')
 
@@ -15,4 +16,5 @@ Runner.createWithExpress(logger, path.join(__dirname, '..', 'datasources', 'even
   .attachSaga(BookTransaction)
   .attachReadModel('/accounts', AccountListReadModel, 'accounts')
   .attachReadModel('/accountTree', AccountTreeReadModel, 'accounts')
+  .attachReadModel('/transactions', TransactionListReadModel, 'transactions')
   .replayHistory().then(runner => runner.startServer(8000))
