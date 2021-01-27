@@ -1,14 +1,15 @@
 const assert = require('assert')
 const { ValidationError } = require('ddd-js')
+const Currency = require('../../../../../src/ValueObject/Currency')
 const BankAccount = require('../../../../../src/Aggregates/Account/Entity/BankAccount')
 const AccountName = require('../../../../../src/Aggregates/Account/ValueObject/AccountName')
 
-describe('BankAccount', () => {
+describe('Account.Entity.BankAccount', () => {
   describe('tryCreate()', () => {
     it('should throw an error if a required metadata field is missing', () => {
       // noinspection JSCheckFunctionSignatures
       assert.throws(
-        () => BankAccount.tryCreate(new AccountName('test'), { someNonsenseField: 'containing nonsense' }),
+        () => BankAccount.tryCreate(new AccountName('test'), new Currency('USD'), { someNonsenseField: 'containing nonsense' }),
         ValidationError
       )
     })
@@ -21,7 +22,7 @@ describe('BankAccount', () => {
         bic: 'BYLADEM1001'
       }
 
-      const entity = BankAccount.tryCreate(expectedAccountName, expectedMetadata)
+      const entity = BankAccount.tryCreate(expectedAccountName, new Currency('USD'), expectedMetadata)
 
       assert(entity instanceof BankAccount)
       assert.ok(entity.name.equals(expectedAccountName))

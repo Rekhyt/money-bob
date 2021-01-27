@@ -26,7 +26,7 @@ const CreditCardNumber = class {
   toString () { return CCNumberFn.toString() }
 }
 
-describe('MetadataCreditCard', () => {
+describe('Account.ValueObject.MetadataCreditCard', () => {
   let subjectUnderTest
 
   beforeEach(() => {

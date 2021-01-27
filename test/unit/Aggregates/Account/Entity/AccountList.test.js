@@ -4,6 +4,7 @@ const chai = require('chai')
 chai.should()
 
 const { ValidationError } = require('ddd-js')
+const Currency = require('../../../../../src/ValueObject/Currency')
 const AccountList = require('../../../../../src/Aggregates/Account/Entity/AccountList')
 const Account = require('../../../../../src/Aggregates/Account/Entity/Account')
 const Debit = require('../../../../../src/Aggregates/Account/Entity/Debit')
@@ -12,7 +13,7 @@ const DebitorName = require('../../../../../src/Aggregates/Account/ValueObject/M
 
 const AccountImpl = class extends Account {}
 
-describe('AccountList', () => {
+describe('Account.Entity.AccountList', () => {
   let defaultAccountList
   let subjectUnderTest
   let logger
@@ -24,7 +25,7 @@ describe('AccountList', () => {
       const accounts = []
       let parentName = null
       for (let i = 1; i <= num; i++) {
-        const parent = new AccountImpl(new AccountName(`account-${i}`), parentName)
+        const parent = new AccountImpl(new AccountName(`account-${i}`), new Currency('USD'), parentName)
         parentName = parent.name
         accounts.push(parent)
       }
@@ -52,11 +53,12 @@ describe('AccountList', () => {
     }
 
     subjectUnderTest = new AccountList(logger, commandDispatcher, eventDispatcher)
+    subjectUnderTest.setup()
   })
 
-  describe('constructor', () => {
+  describe('constructor & setup', () => {
     it('should register all command handlers', () => {
-      const expectedCommands = ['Account.createAccount', 'Account.linkAccounts', 'Account.addTags']
+      const expectedCommands = ['Account.createAccount', 'Account.linkAccounts', 'Account.addTags', 'Account.bookTransaction']
 
       let subscribeCallCount = 0
       commandDispatcher.subscribe = command => {
@@ -66,12 +68,19 @@ describe('AccountList', () => {
 
       const accountList = new AccountList(logger, commandDispatcher, eventDispatcher)
       accountList.should.be.an.instanceOf(AccountList)
+      accountList.setup()
 
       assert.strictEqual(subscribeCallCount, expectedCommands.length)
     })
 
     it('should register all event handlers', () => {
-      const expectedEvents = ['Account.accountCreated', 'Account.accountsLinked', 'Account.tagsAdded']
+      const expectedEvents = [
+        'Account.accountCreated',
+        'Account.accountsLinked',
+        'Account.tagsAdded',
+        'Account.moneyAdded',
+        'Account.moneyWithdrawn'
+      ]
 
       let subscribeCallCount = 0
       eventDispatcher.subscribe = event => {
@@ -81,49 +90,58 @@ describe('AccountList', () => {
 
       const accountList = new AccountList(logger, commandDispatcher, eventDispatcher)
       accountList.should.be.an.instanceOf(AccountList)
+      accountList.setup()
 
       assert.strictEqual(subscribeCallCount, expectedEvents.length)
     })
   })
 
-  describe('command & event handling functions', () => {
-    it('should spread the command payloads and pass them to the proper class methods', () => {
-      const commands = [
-        {
-          name: 'Account.createAccount',
-          payload: {
-            name: 'account-1',
-            type: 'bankaccount',
-            metadata: { iban: '345678962298' }
-          }
-        },
-        {
-          name: 'Account.linkAccounts',
-          payload: {
-            subAccountName: 'account-2',
-            parentAccountName: 'account-1'
-          }
-        },
-        {
-          name: 'Account.addTags',
-          payload: {
-            name: 'account-1',
-            tags: ['car', 'service', 'repair']
-          }
+  describe('command handling functions', () => {
+    const commands = [
+      {
+        name: 'Account.createAccount',
+        payload: {
+          name: 'account-1',
+          type: 'bankaccount',
+          currency: 'USD',
+          metadata: { iban: '345678962298' }
         }
-      ]
+      },
+      {
+        name: 'Account.linkAccounts',
+        payload: {
+          subAccountName: 'account-2',
+          parentAccountName: 'account-1'
+        }
+      },
+      {
+        name: 'Account.addTags',
+        payload: {
+          name: 'account-1',
+          tags: ['car', 'service', 'repair']
+        }
+      },
+      {
+        name: 'Account.bookTransaction',
+        payload: {
+          account1: 'account-1',
+          account2: 'account-1',
+          amount: 123.45,
+          currency: 'USD'
+        }
+      }
+    ]
 
-      commands.forEach(command => {
+    for (const command of commands) {
+      it(`should spread the payload of ${command.name} and pass it to the proper class methods`, async () => {
         let called = false
-        subjectUnderTest[command.name.split('.')[1]] = (...args) => {
+        subjectUnderTest[command.name.split('.')[1]] = async (...args) => {
           called = true
           const payloadValues = Object.values(command.payload)
-          args.forEach((arg, index) => {
-            assert.deepStrictEqual(arg, payloadValues[index])
-          })
+          args.forEach((arg, index) => assert.deepStrictEqual(arg, payloadValues[index]))
         }
 
-        subjectUnderTest.execute({
+        await subjectUnderTest.execute({
           name: command.name,
           time: new Date().toISOString(),
           payload: command.payload
@@ -131,42 +149,59 @@ describe('AccountList', () => {
 
         assert.ok(called, `Handler for command "${command.name}" was not called.`)
       })
-    })
+    }
+  })
 
-    it('should spread the event payloads and pass them to the proper class methods', async () => {
-      const events = [
-        {
-          name: 'Account.accountCreated',
-          payload: {
-            name: 'account-1',
-            type: 'bankaccount',
-            metadata: { iban: '345678962298' }
-          }
-        },
-        {
-          name: 'Account.accountsLinked',
-          payload: {
-            subAccountName: 'account-2',
-            parentAccountName: 'account-1'
-          }
-        },
-        {
-          name: 'Account.tagsAdded',
-          payload: {
-            name: 'account-1',
-            tags: ['car', 'service', 'repair']
-          }
+  describe('event handling functions', () => {
+    const events = [
+      {
+        name: 'Account.accountCreated',
+        payload: {
+          name: 'account-1',
+          type: 'bankaccount',
+          currency: 'USD',
+          metadata: { iban: '345678962298' }
         }
-      ]
+      },
+      {
+        name: 'Account.accountsLinked',
+        payload: {
+          subAccountName: 'account-2',
+          parentAccountName: 'account-1'
+        }
+      },
+      {
+        name: 'Account.tagsAdded',
+        payload: {
+          name: 'account-1',
+          tags: ['car', 'service', 'repair']
+        }
+      },
+      {
+        name: 'Account.moneyAdded',
+        payload: {
+          account: 'account-1',
+          amount: 123.45,
+          currency: 'USD'
+        }
+      },
+      {
+        name: 'Account.moneyWithdrawn',
+        payload: {
+          account: 'account-2',
+          amount: 123.45,
+          currency: 'USD'
+        }
+      }
+    ]
 
-      events.forEach(async event => {
+    for (const event of events) {
+      it(`should spread the payload for ${event} and pass it to the proper class methods`, async () => {
         let called = false
-        subjectUnderTest[event.name.split('.')[1]] = (...args) => {
+        subjectUnderTest[event.name.split('.')[1]] = async (...args) => {
           called = true
           const payloadValues = Object.values(event.payload)
-          args.forEach((arg, index) => {
-            assert.deepStrictEqual(arg, payloadValues[index])
-          })
+          args.forEach((arg, index) => assert.deepStrictEqual(arg, payloadValues[index]))
         }
 
         await subjectUnderTest.apply({
@@ -177,39 +212,42 @@ describe('AccountList', () => {
 
         assert.ok(called, `Handler for event "${event.name}" was not called.`)
       })
-    })
+    }
   })
 
   describe('createAccount', () => {
-    it('should throw a proper validation error if the account name and type are invalid', () => {
+    it('should throw a proper validation error if the account name and type are invalid', async () => {
       let thrown = false
 
       try {
         // noinspection JSCheckFunctionSignatures
-        subjectUnderTest.createAccount('', '', {})
+        await subjectUnderTest.createAccount('', '', '', {})
       } catch (err) {
         thrown = true
         err.should.be.an.instanceOf(ValidationError)
-        err.invalidFields.should.be.an('array').that.has.lengthOf(2)
+        err.invalidFields.should.be.an('array').that.has.lengthOf(3)
 
         err.invalidFields.should.have.nested.property('[0].fieldName', 'name')
         err.invalidFields[0].message.should.match(/must not be an empty string/)
 
         err.invalidFields.should.have.nested.property('[1].fieldName', 'type')
         err.invalidFields[1].message.should.match(/must be one of/)
+
+        err.invalidFields.should.have.nested.property('[2].fieldName', 'currency')
+        err.invalidFields[1].message.should.match(/must be one of/)
       }
 
       assert.ok(thrown)
     })
 
-    it('should throw a proper validation error if an account with the same name already exists', () => {
+    it('should throw a proper validation error if an account with the same name already exists', async () => {
       let thrown = false
 
       subjectUnderTest._accounts = defaultAccountList(1)
 
       try {
         // noinspection JSCheckFunctionSignatures
-        subjectUnderTest.createAccount('account-1', 'debit', { debit: { debitorName: 'test' } })
+        await subjectUnderTest.createAccount('account-1', 'debit', 'USD', { debit: { debitorName: 'test' } })
       } catch (err) {
         thrown = true
         err.should.be.an.instanceOf(ValidationError)
@@ -221,12 +259,12 @@ describe('AccountList', () => {
       assert.ok(thrown, 'Expected a ValidationError to be thrown.')
     })
 
-    it('should throw a proper error if the metadata for the account type is missing', () => {
+    it('should throw a proper error if the metadata for the account type is missing', async () => {
       let thrown = false
 
       try {
         // noinspection JSCheckFunctionSignatures
-        subjectUnderTest.createAccount('account-1', 'bankaccount', {})
+        await subjectUnderTest.createAccount('account-1', 'bankaccount', 'USD', {})
       } catch (err) {
         thrown = true
         err.should.be.an.instanceOf(ValidationError)
@@ -238,12 +276,12 @@ describe('AccountList', () => {
       assert.ok(thrown, 'Expected a ValidationError to be thrown.')
     })
 
-    it('should throw a proper error if the metadata for the account type is not an object', () => {
+    it('should throw a proper error if the metadata for the account type is not an object', async () => {
       let thrown = false
 
       try {
         // noinspection JSCheckFunctionSignatures
-        subjectUnderTest.createAccount('account-1', 'bankaccount', { bankaccount: [] })
+        await subjectUnderTest.createAccount('account-1', 'bankaccount', 'USD', { bankaccount: [] })
       } catch (err) {
         thrown = true
         err.should.be.an.instanceOf(ValidationError)
@@ -255,12 +293,12 @@ describe('AccountList', () => {
       assert.ok(thrown, 'Expected a ValidationError to be thrown.')
     })
 
-    it('should throw a proper error if metadata is invalid', () => {
+    it('should throw a proper error if metadata is invalid', async () => {
       let thrown = false
 
       try {
         // noinspection JSCheckFunctionSignatures
-        subjectUnderTest.createAccount('account-1', 'bankaccount', {
+        await subjectUnderTest.createAccount('account-1', 'bankaccount', 'USD', {
           bankaccount: {
             institute: 'test',
             iban: '123456789',
@@ -278,7 +316,7 @@ describe('AccountList', () => {
       assert.ok(thrown, 'Expected a ValidationError to be thrown.')
     })
 
-    it('should return the accountCreated event', () => {
+    it('should return the accountCreated event', async () => {
       const clock = sinon.useFakeTimers({ now: Date.now() })
 
       const expectedEvent = {
@@ -286,15 +324,18 @@ describe('AccountList', () => {
         payload: {
           name: 'account-1',
           type: 'debit',
+          currency: 'USD',
           metadata: { debit: { debitorName: 'Joe' } }
         },
         time: new Date().toISOString()
       }
 
       // noinspection JSCheckFunctionSignatures
-      const events = subjectUnderTest.createAccount(
+      const events = await subjectUnderTest.createAccount(
         'account-1',
-        'debit', { debit: { debitorName: 'Joe' } }
+        'debit',
+        'USD',
+        { debit: { debitorName: 'Joe' } }
       )
 
       assert.deepStrictEqual(events[0], expectedEvent)
@@ -309,7 +350,7 @@ describe('AccountList', () => {
       const expectedAccountDebitor = new DebitorName('Joe')
 
       // noinspection JSCheckFunctionSignatures
-      await subjectUnderTest.accountCreated('account-1', 'debit', { debit: { debitorName: 'Joe' } })
+      await subjectUnderTest.accountCreated('account-1', 'debit', 'USD', { debit: { debitorName: 'Joe' } })
 
       subjectUnderTest._accounts.should.be.an('array').that.has.lengthOf(1)
       subjectUnderTest._accounts[0].should.be.an.instanceOf(Debit)
@@ -319,11 +360,11 @@ describe('AccountList', () => {
   })
 
   describe('linkAccounts', () => {
-    it('should throw a proper ValidationError if the sub or parent account name is invalid', () => {
+    it('should throw a proper ValidationError if the sub or parent account name is invalid', async () => {
       let thrown = false
 
       try {
-        subjectUnderTest.linkAccounts('', '')
+        await subjectUnderTest.linkAccounts('', '')
       } catch (err) {
         thrown = true
         err.should.be.an.instanceOf(ValidationError)
@@ -337,13 +378,13 @@ describe('AccountList', () => {
       assert.ok(thrown, 'Expected a ValidationError to be thrown.')
     })
 
-    it('should throw a proper ValidationError if the parent account does not exist', () => {
+    it('should throw a proper ValidationError if the parent account does not exist', async () => {
       let thrown = false
 
       subjectUnderTest._accounts = defaultAccountList(1)
 
       try {
-        subjectUnderTest.linkAccounts('account-1', 'account-2')
+        await subjectUnderTest.linkAccounts('account-1', 'account-2')
       } catch (err) {
         thrown = true
         err.should.be.an.instanceOf(ValidationError)
@@ -355,11 +396,11 @@ describe('AccountList', () => {
       assert.ok(thrown, 'Expected a ValidationError to be thrown.')
     })
 
-    it('should throw a proper ValidationError if the sub & parent accounts do not exist', () => {
+    it('should throw a proper ValidationError if the sub & parent accounts do not exist', async () => {
       let thrown = false
 
       try {
-        subjectUnderTest.linkAccounts('account-1101', 'account-1102')
+        await subjectUnderTest.linkAccounts('account-1101', 'account-1102')
       } catch (err) {
         thrown = true
         err.should.be.an.instanceOf(ValidationError)
@@ -375,13 +416,13 @@ describe('AccountList', () => {
       assert.ok(thrown, 'Expected a ValidationError to be thrown.')
     })
 
-    it('should throw an error when linking an account to itself', () => {
+    it('should throw an error when linking an account to itself', async () => {
       let thrown = false
 
       subjectUnderTest._accounts = defaultAccountList(1)
 
       try {
-        subjectUnderTest.linkAccounts('account-1', 'account-1')
+        await subjectUnderTest.linkAccounts('account-1', 'account-1')
       } catch (err) {
         thrown = true
         err.should.be.an.instanceOf(ValidationError)
@@ -394,13 +435,13 @@ describe('AccountList', () => {
       assert.ok(thrown, 'Expected a ValidationError to be thrown.')
     })
 
-    it('should throw an error when linking two accounts would create a circle', () => {
+    it('should throw an error when linking two accounts would create a circle', async () => {
       let thrown = false
 
       subjectUnderTest._accounts = defaultAccountList(5)
 
       try {
-        subjectUnderTest.linkAccounts('account-2', 'account-5')
+        await subjectUnderTest.linkAccounts('account-1', 'account-5')
       } catch (err) {
         thrown = true
         err.should.be.an.instanceOf(ValidationError)
@@ -412,13 +453,16 @@ describe('AccountList', () => {
       assert.ok(thrown, 'Expected a ValidationError to be thrown.')
     })
 
-    it('should throw an error when linking two accounts would exceed the maximum branch path length', () => {
+    it('should throw an error when linking two accounts would exceed the maximum branch path length', async () => {
       let thrown = false
 
-      subjectUnderTest._accounts = defaultAccountList(1001)
+      subjectUnderTest._accounts = [
+        ...defaultAccountList(1000),
+        new AccountImpl(new AccountName('account-1001'), new Currency('USD'))
+      ]
 
       try {
-        subjectUnderTest.linkAccounts('account-1001', 'account-1000')
+        await subjectUnderTest.linkAccounts('account-1001', 'account-1000')
       } catch (err) {
         thrown = true
         err.should.be.an.instanceOf(ValidationError)
@@ -430,16 +474,16 @@ describe('AccountList', () => {
       assert.ok(thrown, 'Expected a ValidationError to be thrown.')
     })
 
-    it('should return an Account.accountsLinked event if all checks pass', () => {
+    it('should return an Account.accountsLinked event if all checks pass', async () => {
       const clock = sinon.useFakeTimers({ now: Date.now() })
 
       subjectUnderTest._accounts = [
-        new AccountImpl(new AccountName('account-1')),
-        new AccountImpl(new AccountName('account-2'))
+        new AccountImpl(new AccountName('account-1'), new Currency('USD')),
+        new AccountImpl(new AccountName('account-2'), new Currency('USD'))
       ]
 
       assert.deepStrictEqual(
-        subjectUnderTest.linkAccounts('account-1', 'account-2'),
+        await subjectUnderTest.linkAccounts('account-1', 'account-2'),
         [{
           name: 'Account.accountsLinked',
           time: new Date().toISOString(),
@@ -456,27 +500,27 @@ describe('AccountList', () => {
 
   describe('accountsLinked', () => {
     it('should should set the parent account as the sub account\'s parent', async () => {
-      const expectedParent = new AccountName('account-2')
+      const expectedParent = new AccountImpl(new AccountName('account-2'), new Currency('USD'))
 
       subjectUnderTest._accounts = [
-        new AccountImpl(new AccountName('account-1')),
-        new AccountImpl(expectedParent)
+        new AccountImpl(new AccountName('account-1'), new Currency('USD')),
+        expectedParent
       ]
 
       // noinspection JSCheckFunctionSignatures
       await subjectUnderTest.accountsLinked('account-1', 'account-2')
 
-      subjectUnderTest._accounts[0].parent.should.be.an.instanceOf(AccountName)
-      assert.ok(subjectUnderTest._accounts[0].parent.equals(new AccountName('account-2')))
+      subjectUnderTest._accounts[0].parent.should.be.an.instanceOf(Account)
+      assert.strictEqual(subjectUnderTest._accounts[0].parent, expectedParent)
     })
   })
 
   describe('addTags', () => {
-    it('should throw a proper ValidationError if the account name is invalid', () => {
+    it('should throw a proper ValidationError if the account name is invalid', async () => {
       let thrown = false
 
       try {
-        subjectUnderTest.addTags('', [])
+        await subjectUnderTest.addTags('', [])
       } catch (err) {
         thrown = true
         err.should.be.an.instanceOf(ValidationError)
@@ -487,11 +531,11 @@ describe('AccountList', () => {
       assert.ok(thrown, 'Expected a ValidationError to be thrown.')
     })
 
-    it('should throw a proper ValidationError if the account cannot be found', () => {
+    it('should throw a proper ValidationError if the account cannot be found', async () => {
       let thrown = false
 
       try {
-        subjectUnderTest.addTags('account-1', [])
+        await subjectUnderTest.addTags('account-1', [])
       } catch (err) {
         thrown = true
         err.should.be.an.instanceOf(ValidationError)
@@ -502,13 +546,13 @@ describe('AccountList', () => {
       assert.ok(thrown, 'Expected a ValidationError to be thrown.')
     })
 
-    it('should throw a proper ValidationError if tags are invalid', () => {
+    it('should throw a proper ValidationError if tags are invalid', async () => {
       let thrown = false
 
       subjectUnderTest._accounts = defaultAccountList(1)
 
       try {
-        subjectUnderTest.addTags('account-1', ['', '123'])
+        await subjectUnderTest.addTags('account-1', ['', '123'])
       } catch (err) {
         thrown = true
         err.should.be.an.instanceOf(ValidationError)
@@ -519,19 +563,19 @@ describe('AccountList', () => {
       assert.ok(thrown, 'Expected a ValidationError to be thrown.')
     })
 
-    it('should not return an event if no tags were added', () => {
+    it('should not return an event if no tags were added', async () => {
       subjectUnderTest._accounts = defaultAccountList(1)
 
-      assert.deepStrictEqual(subjectUnderTest.addTags('account-1', []), [])
+      assert.deepStrictEqual(await subjectUnderTest.addTags('account-1', []), [])
     })
 
-    it('should return the Account.tagsAdded event if tags were added', () => {
+    it('should return the Account.tagsAdded event if tags were added', async () => {
       const clock = sinon.useFakeTimers({ now: Date.now() })
 
       subjectUnderTest._accounts = defaultAccountList(1)
 
       assert.deepStrictEqual(
-        subjectUnderTest.addTags('account-1', ['car', 'repair', 'service']),
+        await subjectUnderTest.addTags('account-1', ['car', 'repair', 'service']),
         [{
           name: 'Account.tagsAdded',
           time: new Date().toISOString(),
@@ -545,10 +589,12 @@ describe('AccountList', () => {
       clock.restore()
     })
 
-    it('should remove duplicate tags', () => {
+    it('should remove duplicate tags', async () => {
       subjectUnderTest._accounts = defaultAccountList(1)
 
-      subjectUnderTest.addTags('account-1', ['car', 'car', 'repair', 'car', 'service'])[0].payload.tags
+      const events = await subjectUnderTest.addTags('account-1', ['car', 'car', 'repair', 'car', 'service'])
+
+      events[0].payload.tags
         .should.be.an('array')
         .with.lengthOf(3)
         .that.has.same.members(['car', 'repair', 'service'])
@@ -557,7 +603,7 @@ describe('AccountList', () => {
 
   describe('tagsAdded', () => {
     it('should should add the tags to the proper account', async () => {
-      const expectedAccount = new AccountImpl(new AccountName('account-1'))
+      const expectedAccount = new AccountImpl(new AccountName('account-1'), new Currency('USD'))
       const expectedTags = ['car', 'repair', 'service']
       subjectUnderTest._accounts = [expectedAccount]
 

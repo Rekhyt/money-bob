@@ -5,7 +5,7 @@ chai.should()
 
 const AccountList = require('../../../src/ReadModel/AccountList')
 
-describe('AccountList', () => {
+describe('ReadModel.AccountList', () => {
   let subjectUnderTest
   let logger
   let eventDispatcher
@@ -29,7 +29,10 @@ describe('AccountList', () => {
 
   describe('constructor', () => {
     it('should register all event handlers', () => {
-      const expectedEvents = ['Account.accountCreated', 'Account.accountsLinked', 'Account.tagsAdded']
+      const expectedEvents = [
+        'Account.accountCreated', 'Account.accountsLinked', 'Account.tagsAdded', 'Account.moneyAdded',
+        'Account.moneyWithdrawn'
+      ]
 
       let subscribeCallCount = 0
       eventDispatcher.subscribe = event => {
@@ -45,33 +48,50 @@ describe('AccountList', () => {
   })
 
   describe('event handling functions', () => {
-    it('should spread the event payloads and pass them to the proper class methods', async () => {
-      const events = [
-        {
-          name: 'Account.accountCreated',
-          payload: {
-            name: 'account-1',
-            type: 'bankaccount',
-            metadata: { iban: '345678962298' }
-          }
-        },
-        {
-          name: 'Account.accountsLinked',
-          payload: {
-            subAccountName: 'account-2',
-            parentAccountName: 'account-1'
-          }
-        },
-        {
-          name: 'Account.tagsAdded',
-          payload: {
-            name: 'account-1',
-            tags: ['car', 'service', 'repair']
-          }
+    const events = [
+      {
+        name: 'Account.accountCreated',
+        payload: {
+          name: 'account-1',
+          type: 'bankaccount',
+          currency: 'USD',
+          metadata: { iban: '345678962298' }
         }
-      ]
+      },
+      {
+        name: 'Account.accountsLinked',
+        payload: {
+          subAccountName: 'account-2',
+          parentAccountName: 'account-1'
+        }
+      },
+      {
+        name: 'Account.tagsAdded',
+        payload: {
+          name: 'account-1',
+          tags: ['car', 'service', 'repair']
+        }
+      },
+      {
+        name: 'Account.moneyAdded',
+        payload: {
+          account: 'account-1',
+          amount: 145.64,
+          currency: 'USD'
+        }
+      },
+      {
+        name: 'Account.moneyWithdrawn',
+        payload: {
+          account: 'account-1',
+          amount: 145.64,
+          currency: 'USD'
+        }
+      }
+    ]
 
-      await Promise.all(events.map(async event => {
+    for (const event of events) {
+      it(`should spread the payloads for ${event} and pass it to the proper class methods`, async () => {
         let called = false
         subjectUnderTest[event.name.split('.')[1]] = (...args) => {
           called = true
@@ -88,8 +108,8 @@ describe('AccountList', () => {
         })
 
         assert.ok(called, `Handler for event "${event.name}" was not called.`)
-      }))
-    })
+      })
+    }
   })
 
   describe('accounts', () => {
@@ -109,15 +129,16 @@ describe('AccountList', () => {
   describe('accountCreated', () => {
     it('should add an account to the list of already existing accounts', async () => {
       const expectedAccounts = [
-        { name: 'account-1', type: 'paypal', metadata: { email: 'bob@weird-webdesign.com' }, tags: [], parent: null },
-        { name: 'account-2', type: 'paypal', metadata: { email: 'jay@weird-webdesign.com' }, tags: [], parent: null },
-        { name: 'account-3', type: 'paypal', metadata: { email: 'brodie@weird-webdesign.com' }, tags: [], parent: null }
+        { name: 'account-1', type: 'paypal', currency: 'USD', metadata: { email: 'bob@weird-webdesign.com' }, balance: 0, tags: [], parent: null },
+        { name: 'account-2', type: 'paypal', currency: 'USD', metadata: { email: 'jay@weird-webdesign.com' }, balance: 0, tags: [], parent: null },
+        { name: 'account-3', type: 'paypal', currency: 'USD', metadata: { email: 'brodie@weird-webdesign.com' }, balance: 0, tags: [], parent: null }
       ]
 
       subjectUnderTest._accounts = [expectedAccounts[0], expectedAccounts[1]]
       await subjectUnderTest.accountCreated(
         expectedAccounts[2].name,
         expectedAccounts[2].type,
+        expectedAccounts[2].currency,
         expectedAccounts[2].metadata,
         expectedAccounts[2].parent
       )

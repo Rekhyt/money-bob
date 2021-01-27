@@ -16,17 +16,9 @@ const AccountName = require('../ValueObject/AccountName')
 const AccountType = require('../ValueObject/AccountType')
 
 class AccountList extends RootEntity {
-  /**
-   * @param {Logger} logger
-   * @param {CommandDispatcher} commandDispatcher
-   * @param {EventDispatcher} eventDispatcher
-   * @param {Account[]} accounts
-   */
-  constructor (logger, commandDispatcher, eventDispatcher, accounts = []) {
-    super(logger, commandDispatcher, eventDispatcher)
-
+  setup () {
     /** @property {Account[]} */
-    this._accounts = [...accounts]
+    this._accounts = []
 
     this._accountClasses = {
       bankaccount: BankAccount,
@@ -36,11 +28,34 @@ class AccountList extends RootEntity {
       liability: Liability
     }
 
-    this.registerCommand('Account.createAccount', async command => this.createAccount(command.payload.name, command.payload.type, command.payload.currency, command.payload.metadata))
-    this.registerCommand('Account.linkAccounts', async command => this.linkAccounts(command.payload.subAccountName, command.payload.parentAccountName))
-    this.registerCommand('Account.addTags', async command => this.addTags(command.payload.name, command.payload.tags))
-    this.registerCommand('Account.bookTransaction', async command => this.bookTransaction(command.payload.account1, command.payload.account2, command.payload.amount, command.payload.currency))
+    // Commands
+    this.registerCommand(
+      'Account.createAccount',
+      async command => this.createAccount(
+        command.payload.name,
+        command.payload.type,
+        command.payload.currency,
+        command.payload.metadata
+      )
+    )
 
+    this.registerCommand(
+      'Account.linkAccounts',
+      async command => this.linkAccounts(command.payload.subAccountName, command.payload.parentAccountName)
+    )
+
+    this.registerCommand(
+      'Account.addTags',
+      async command => this.addTags(command.payload.name, command.payload.tags)
+    )
+
+    this.registerCommand(
+      'Account.bookTransaction',
+      async command => this.bookTransaction(command.payload.account1, command.payload.account2, command.payload.amount, command.payload.currency),
+      command => this.bookTransactionEntities(command.payload.account1, command.payload.account2)
+    )
+
+    // Events
     this.registerEvent('Account.accountCreated', async event => this.accountCreated(event.payload.name, event.payload.type, event.payload.currency, event.payload.metadata))
     this.registerEvent('Account.accountsLinked', async event => this.accountsLinked(event.payload.subAccountName, event.payload.parentAccountName))
     this.registerEvent('Account.tagsAdded', async event => this.tagsAdded(event.payload.name, event.payload.tags))
@@ -152,6 +167,8 @@ class AccountList extends RootEntity {
       }
     }
 
+    if (!subAccount) throw validationError
+
     const currentParent = subAccount.parent
     if (!validationError.hasErrors() && currentParent) {
       validationError.addInvalidField('subAccountName', `Cannot link account ${subAccountName} that is already linked to ${currentParent}. Try moving the account instead.`)
@@ -165,7 +182,7 @@ class AccountList extends RootEntity {
       const linkPathParent = this._extractLinkPath(parentAccount)
       const linkPathSub = this._extractLinkPath(subAccount)
 
-      if (linkPathParent.length + linkPathSub.length > 1000) {
+      if (linkPathParent.length + linkPathSub.length + 1 > 1000) {
         validationError.addInvalidField(
           'parentAccountName',
           `Cannot link "${subAccountName}" to "${parentAccountName}" as that would exceed the maximum link depth of 1000.`
@@ -203,7 +220,7 @@ class AccountList extends RootEntity {
     const subAccount = this._accounts.find(account => account.name.getValue() === rawSubAccountName)
     const parentAccount = this._accounts.find(account => account.name.getValue() === rawParentAccountName)
 
-    subAccount.setParent(parentAccount)
+    subAccount.parent = parentAccount
     parentAccount.addChild(subAccount)
   }
 
@@ -256,14 +273,7 @@ class AccountList extends RootEntity {
     this._accounts.find(account => account.name.getValue() === rawName).addTags(rawTags.map(tag => new Tag(tag)))
   }
 
-  /**
-   * @param {string} rawAccount1
-   * @param {string} rawAccount2
-   * @param {number} rawAmount
-   * @param {string} rawCurrency
-   * @returns {Promise<Event[]>}
-   */
-  async bookTransaction (rawAccount1, rawAccount2, rawAmount, rawCurrency) {
+  bookTransactionEntities (rawAccount1, rawAccount2) {
     const validationError = new ValidationError()
 
     let name1
@@ -294,6 +304,29 @@ class AccountList extends RootEntity {
       if (!account2) {
         validationError.addInvalidField('account2', `Account 2 with name "${name2}" not found.`)
       }
+    }
+
+    return [account1, account2]
+  }
+
+  /**
+   * @param {string} rawAccount1
+   * @param {string} rawAccount2
+   * @param {number} rawAmount
+   * @param {string} rawCurrency
+   * @returns {Promise<Event[]>}
+   */
+  async bookTransaction (rawAccount1, rawAccount2, rawAmount, rawCurrency) {
+    const validationError = new ValidationError()
+
+    let account1, account2
+    try {
+      [account1, account2] = this.bookTransactionEntities(rawAccount1, rawAccount2)
+      // Uncomment this to test version conflicts:
+      // account1.versionUp()
+    } catch (err) {
+      if (!(err instanceof ValidationError)) throw err
+      err.invalidFields.forEach(f => validationError.addInvalidField(f.fieldName, f.message))
     }
 
     if (account1 && account2) {
@@ -386,11 +419,11 @@ class AccountList extends RootEntity {
    */
   _extractLinkPath (startAccount, path = []) {
     if (startAccount.parent === null) {
-      return path
+      return [...path, startAccount]
     }
 
     const parentAccount = this._accounts.find(account => account.name.equals(startAccount.parent))
-    path.push(parentAccount)
+    path.push(startAccount)
 
     return this._extractLinkPath(parentAccount, path)
   }

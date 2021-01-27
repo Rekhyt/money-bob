@@ -9,7 +9,7 @@ const EmailAddress = class {
   toString () { return EmailFn.toString() }
 }
 
-describe('MetadataPayPal', () => {
+describe('Account.ValueObject.MetadataPayPal', () => {
   let subjectUnderTest
 
   beforeEach(() => {

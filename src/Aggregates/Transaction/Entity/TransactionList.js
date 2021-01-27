@@ -11,15 +11,7 @@ const Subject = require('../ValueObject/Subject')
 const TransactionTime = require('../ValueObject/TransactionTime')
 
 class TransactionList extends RootEntity {
-  /**
-   * @param {Logger} logger
-   * @param {CommandDispatcher} commandDispatcher
-   * @param {EventDispatcher} eventDispatcher
-   * @param {Transaction[]} transactions
-   */
-  constructor (logger, commandDispatcher, eventDispatcher, transactions = []) {
-    super(logger, commandDispatcher, eventDispatcher)
-
+  setup () {
     this._transactions = []
 
     this.registerCommand('Transaction.bookTransaction', command => this.bookTransaction(

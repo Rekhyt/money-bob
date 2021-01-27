@@ -3,7 +3,7 @@ const { InvalidArgumentError } = require('ddd-js')
 
 const CreditCardType = require('../../../../../src/Aggregates/Account/ValueObject/CreditCardType')
 
-describe('CreditCardType', () => {
+describe('Account.ValueObject.CreditCardType', () => {
   it('should throw an error if value is not an enum value', () => {
     assert.throws(() => new CreditCardType('not valid'), InvalidArgumentError)
   })

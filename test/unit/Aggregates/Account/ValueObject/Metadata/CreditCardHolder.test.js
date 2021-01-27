@@ -3,7 +3,7 @@ const { InvalidArgumentError } = require('ddd-js')
 
 const CreditCardHolder = require('../../../../../../src/Aggregates/Account/ValueObject/Metadata/CreditCardHolder')
 
-describe('CreditCardHolder', () => {
+describe('Account.ValueObject.CreditCardHolder', () => {
   it('should throw an error if value is not string or empty string', () => {
     assert.throws(() => new CreditCardHolder(), TypeError)
     assert.throws(() => new CreditCardHolder(''), InvalidArgumentError)

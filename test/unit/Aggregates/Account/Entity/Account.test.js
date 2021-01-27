@@ -1,16 +1,17 @@
 const assert = require('assert')
 const { ValidationError } = require('ddd-js')
+const Currency = require('../../../../../src/ValueObject/Currency')
 const Account = require('../../../../../src/Aggregates/Account/Entity/Account')
 const AccountName = require('../../../../../src/Aggregates/Account/ValueObject/AccountName')
 const Tag = require('../../../../../src/Aggregates/Account/ValueObject/Tag')
 
 const AccountImpl = class extends Account {}
 
-describe('Account', () => {
+describe('Account.Entity.Account', () => {
   let subjectUnderTest
 
   beforeEach(() => {
-    subjectUnderTest = new AccountImpl(new AccountName('test'))
+    subjectUnderTest = new AccountImpl(new AccountName('test'), new Currency('USD'))
   })
 
   describe('validateMetadataFieldsExisting()', () => {
@@ -33,15 +34,19 @@ describe('Account', () => {
 
   describe('equals()', () => {
     it('should be equal to another instance of the same type that has the same name', () => {
-      assert.ok(subjectUnderTest.equals(new AccountImpl(new AccountName('test'))))
+      assert.ok(subjectUnderTest.equals(new AccountImpl(new AccountName('test'), new Currency('USD'))))
     })
 
     it('should not be equal to another instance of a different type', () => {
-      assert.ok(!subjectUnderTest.equals({ name: () => new AccountName('test') }))
+      assert.ok(!subjectUnderTest.equals({ name: () => new AccountName('test', new Currency('USD')) }))
     })
 
     it('should not be equal to another instance of the same type that has a different name', () => {
-      assert.ok(!subjectUnderTest.equals(new AccountImpl(new AccountName('test123'))))
+      assert.ok(!subjectUnderTest.equals(new AccountImpl(new AccountName('test123'), new Currency('USD'))))
+    })
+
+    it('should not be equal to another instance of the same type that has a different currency', () => {
+      assert.ok(!subjectUnderTest.equals(new AccountImpl(new AccountName('test'), new Currency('EUR'))))
     })
   })
 

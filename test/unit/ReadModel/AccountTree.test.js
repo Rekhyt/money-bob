@@ -5,7 +5,7 @@ chai.should()
 
 const AccountTree = require('../../../src/ReadModel/AccountTree')
 
-describe('AccountTree', () => {
+describe('ReadModel.AccountTree', () => {
   let subjectUnderTest
   let logger
   let eventDispatcher

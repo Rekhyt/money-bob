@@ -1,9 +1,7 @@
 const { Saga } = require('ddd-js')
 
 class BookTransaction extends Saga {
-  constructor (logger, commandDispatcher) {
-    super(logger, commandDispatcher)
-
+  setup () {
     this.registerCommand('BookTransaction.bookTransaction', async command => this.bookTransaction(command.payload))
   }
 
@@ -15,24 +13,31 @@ class BookTransaction extends Saga {
   async bookTransaction (payload) {
     const identifier = this.provision()
 
-    const reverseTransactionPayload = { ...payload, account1: payload.account2, account2: payload.account1 }
+    const reverseTransactionPayload = {
+      ...payload,
+      notes: `[ROLLBACK] ${payload.notes}`,
+      account1: payload.account2,
+      account2: payload.account1
+    }
 
     this.addTask(
       identifier,
-      { name: 'Account.bookTransaction', payload: { ...payload }, time: new Date().toJSON() },
       'Account',
+      { name: 'Account.bookTransaction', payload: { ...payload }, time: new Date().toJSON() },
       () => {
         return { name: 'Account.bookTransaction', payload: { ...reverseTransactionPayload }, time: new Date().toJSON() }
-      }
+      },
+      5000
     )
 
     this.addTask(
       identifier,
-      { name: 'Transaction.bookTransaction', payload: { ...payload }, time: new Date().toJSON() },
       'Transaction',
+      { name: 'Transaction.bookTransaction', payload: { ...payload }, time: new Date().toJSON() },
       () => {
-        return { name: 'Account.bookTransaction', payload: { ...reverseTransactionPayload }, time: new Date().toJSON() }
-      }
+        return { name: 'Transaction.bookTransaction', payload: { ...reverseTransactionPayload }, time: new Date().toJSON() }
+      },
+      5000
     )
 
     await this.run(identifier)

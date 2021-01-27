@@ -7,7 +7,7 @@ const CreditCardNumber = proxyquire('../../../../../src/Aggregates/Account/Value
   'card-validator': cardValidator
 })
 
-describe('CreditCardNumber', () => {
+describe('Account.ValueObject.CreditCardNumber', () => {
   it('should throw an error if value is not a valid credit card number', () => {
     cardValidator.number = () => { return { isValid: false } }
     assert.throws(() => new CreditCardNumber('3456789'), InvalidArgumentError)

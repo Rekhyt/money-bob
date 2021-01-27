@@ -21,7 +21,7 @@ const Bic = class {
   toString () { return BicFn.toString() }
 }
 
-describe('MetadataBankAccount', () => {
+describe('Account.ValueObject.MetadataBankAccount', () => {
   let subjectUnderTest
 
   beforeEach(() => {

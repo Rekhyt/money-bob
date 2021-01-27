@@ -9,7 +9,7 @@ const DebitorName = class {
   toString () { return DebitorFn.toString() }
 }
 
-describe('MetadataLiability', () => {
+describe('Account.ValueObject.MetadataLiability', () => {
   let subjectUnderTest
 
   beforeEach(() => {

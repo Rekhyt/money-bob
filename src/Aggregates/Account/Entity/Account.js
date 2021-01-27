@@ -1,11 +1,11 @@
-const { ValidationError } = require('ddd-js')
+const { ValidationError, BaseEntity } = require('ddd-js')
 const Amount = require('../../../ValueObject/Amount')
 const Money = require('../../../ValueObject/Money')
 
 /**
  * @abstract
  */
-class Account {
+class Account extends BaseEntity {
   /**
    * @param {AccountName} name
    * @param {Currency} currency
@@ -14,6 +14,8 @@ class Account {
    * @param {Tag[]?} tags
    */
   constructor (name, currency, parent = null, children = [], tags = []) {
+    super()
+
     this._name = name
     this._parent = parent
     this._children = children
@@ -35,6 +37,13 @@ class Account {
    */
   get parent () {
     return this._parent
+  }
+
+  /**
+   * @param {Account} parentAccount
+   */
+  set parent (parentAccount) {
+    this._parent = parentAccount
   }
 
   /**
@@ -70,14 +79,9 @@ class Account {
    * @returns {boolean}
    */
   equals (account) {
-    return account.constructor.name === this.constructor.name && account._name.equals(this._name)
-  }
-
-  /**
-   * @param {Account} parentAccount
-   */
-  setParent (parentAccount) {
-    this._parent = parentAccount
+    return account.constructor.name === this.constructor.name &&
+      account._name.equals(this._name) &&
+      this._balance.getCurrency().equals(account.balance.getCurrency())
   }
 
   /**
